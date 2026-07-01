@@ -21,6 +21,7 @@ RSYNC_EXCLUDE := \
 	--exclude='data/'
 
 .PHONY: sync sync-app sync-gateway publish startdev rebuild seed-spaceapi seed-bundle bundle-to-csv csv-to-bundle heartbeat devdeploy reset vps-rebuild vps-seed vps-reset help endpoint deploy-genjson bernard-copy load-ontology vps-load-ontology
+.PHONY: mac-up mac-down mac-init mac-reset mac-heartbeat mac-test
 .PHONY: c-reset c-activate c-demo c-all
 .PHONY: ca-reachable ca-timeout ca-dns-fail ca-http-error caxis-a
 .PHONY: cb-seeded cb-confirmed cb-aging cb-zombie cb-dead cb-closed caxis-b c-demo-on c-demo-off
@@ -54,17 +55,106 @@ PUSH_STEP    ?= $(MAKE) endpoint
 check-docs:
 	@python3 scripts/check_docs.py
 
+## ── Mac / Docker local dev ───────────────────────────────────────────────────
+## These targets replace the Podman-based startdev/rebuild/reset workflow on macOS.
+## They use docker compose with the mac overlay (infra/docker-compose.mac.yml) and
+## include OHM (Open Hardware Manager) for OKW integration testing.
+##
+## Quick start:
+##   make mac-up    — start all services (MoM + OHM)
+##   make mac-init  — load ontologies + seed test data + heartbeat
+##   make mac-test  — run E2E integration test suite
+##   make mac-down  — stop all services (data persists)
+##   make mac-reset — DESTRUCTIVE: wipe data and re-init
+
+MAC_COMPOSE := docker compose -f infra/docker-compose.yml -f infra/docker-compose.mac.yml
+MAC_SERVICES := maps-nginx oxigraph mak-link-handler ohm
+MAC_OHM_URL ?= http://localhost:8001/v1
+MAC_SPARQL_URL ?= http://localhost:8080/sparql/query
+MAC_SPARQL_UPDATE_URL ?= http://localhost:7878/update
+
+## Start MoM + OHM services on Mac. Creates required data dirs if missing.
+mac-up:
+	@mkdir -p data/tasks data/logs/nginx data/oxigraph data/bot-keys data/ohm
+	@if [ ! -f infra/nginx/.htpasswd ]; then \
+		echo "→ generating .htpasswd (admin:devadmin)..."; \
+		printf '%s' "$$(openssl passwd -apr1 devadmin)" | xargs -I{} sh -c 'echo "admin:{}" > infra/nginx/.htpasswd'; \
+	fi
+	$(MAC_COMPOSE) up -d $(MAC_SERVICES)
+	@echo "→ waiting for services to be healthy..."
+	@timeout 60 sh -c 'until curl -sf http://localhost:8080/health > /dev/null 2>&1; do sleep 2; done' && echo "  ✅ nginx ready" || echo "  ⚠️  nginx health check timed out"
+	@timeout 60 sh -c 'until curl -sf http://localhost:7878/health > /dev/null 2>&1; do sleep 2; done' && echo "  ✅ oxigraph ready" || echo "  ⚠️  oxigraph health check timed out"
+	@timeout 90 sh -c 'until curl -sf http://localhost:8001/health > /dev/null 2>&1; do sleep 3; done' && echo "  ✅ ohm ready" || echo "  ⚠️  ohm health check timed out"
+	@echo "✓ stack up — map: http://localhost:8080  sparql: http://localhost:8080/sparql/query  ohm: http://localhost:8001"
+
+## Stop all Mac services (data in data/ persists).
+mac-down:
+	$(MAC_COMPOSE) down
+	@echo "✓ stack stopped (data persists in data/)"
+
+## Load ontologies + crosswalk, seed test data, trigger heartbeat.
+## Safe to re-run (all operations are idempotent). Run once after mac-up.
+mac-init:
+	@echo "→ loading ontologies and OKW crosswalk..."
+	bash scripts/load_ontology.sh http://localhost:7878
+	@echo "→ seeding test spaces (SpaceAPI test batch)..."
+	OXIGRAPH_ENDPOINT=http://localhost:7878 PYTHONPATH=infra/link_handler:scripts \
+		python3 scripts/seed_spaceapi.py --list data/seed-lists/test-batch.json --network test-batch --force
+	@echo "→ seeding EU fabnet sample (bundle with activities)..."
+	OXIGRAPH_ENDPOINT=http://localhost:7878 PYTHONPATH=infra/link_handler:scripts \
+		python3 scripts/seed_bundle.py --bundle data/seed-lists/fabnet_eu_sample.json --network fabnet --source fabnet-world --force
+	@echo "→ triggering heartbeat (materializes spaces.geojson)..."
+	$(MAKE) mac-heartbeat
+	@echo "✓ init complete — map has data, SPARQL endpoint live"
+
+## Trigger an immediate heartbeat cycle (re-fetches live SpaceAPI endpoints, rematerializes GeoJSON).
+mac-heartbeat:
+	curl -sf -X POST http://localhost:8080/api/heartbeat/run \
+		-H "X-Link-Secret: $$(grep LINK_SECRET .env | cut -d= -f2)" \
+		--max-time 180 | python3 -c "import json,sys; d=json.load(sys.stdin); print('heartbeat:', d)"
+
+## Run the OHM×MoM E2E integration test suite.
+## Requires mac-up + mac-init to have been run first.
+mac-test:
+	@echo "→ running E2E integration tests..."
+	PYTHONPATH=infra/link_handler:scripts \
+	OHM_BASE_URL=$(MAC_OHM_URL) \
+	MOM_SPARQL_URL=$(MAC_SPARQL_URL) \
+	MOM_SPARQL_UPDATE_URL=$(MAC_SPARQL_UPDATE_URL) \
+		python3 -m pytest tests/test_ohm_mom_integration.py -v --tb=short 2>&1
+	@echo "✓ integration tests complete"
+
+## DESTRUCTIVE: wipe all local data and re-initialize from scratch.
+## Loses ALL seeded spaces, Oxigraph triples, and OHM facilities.
+mac-reset:
+	@echo "⚠  This will wipe data/oxigraph/, data/tasks/, data/ohm/ and reinitialize."
+	@read -p "   Type 'reset' to confirm: " ans && [ "$$ans" = "reset" ] || (echo "aborted"; exit 1)
+	$(MAC_COMPOSE) down
+	rm -rf data/oxigraph/* data/tasks/snapshot_store.db data/tasks/heartbeat_log.db \
+		data/tasks/gap_log.txt data/tasks/oxigraph.db data/ohm/* web/data/spaces.geojson
+	$(MAKE) mac-up
+	@sleep 3
+	$(MAKE) mac-init
+	@echo "✓ mac-reset complete"
+
 help:
 	@echo "── DOCS ─────────────────────────────────────────────────────────────"
 	@echo "make check-docs    — fail if a superseded architecture fact reappears in live docs"
-	@echo "── LOCAL ────────────────────────────────────────────────────────────"
+	@echo "── MAC / DOCKER (local dev on macOS, includes OHM) ──────────────────"
+	@echo "make mac-up        — start MoM + OHM stack (Docker, no Podman needed)"
+	@echo "make mac-init      — load ontologies + seed test data + heartbeat (run after mac-up)"
+	@echo "make mac-heartbeat — trigger immediate heartbeat cycle"
+	@echo "make mac-test      — run OHM×MoM E2E integration tests"
+	@echo "make mac-down      — stop all services (data persists)"
+	@echo "make mac-reset     — DESTRUCTIVE: wipe data and re-initialize"
+	@echo "── LOCAL (Podman/Fedora) ────────────────────────────────────────────"
 	@echo "make startdev      — start local stack without rebuilding"
 	@echo "make rebuild       — full local cycle: down → build → up + health wait"
 	@echo "make seed-spaceapi — import directory.spaceapi.io federation directory (~244 spaces)"
 	@echo "make seed-bundle BUNDLE=… NETWORK=… [SOURCE=…] — seed local Path B bundle (grey/claimable pins, no endpoint)"
 	@echo "make bundle-to-csv BUNDLE=… CSV=… — dump a messy bundle to a curation CSV"
 	@echo "make csv-to-bundle CSV=… BUNDLE=… — convert a curated CSV to a seed bundle"
-	@echo "make load-ontology — load mom.ttl + iop.ttl into Oxigraph (auto-run by devdeploy)"
+	@echo "make load-ontology — load mom.ttl + iop.ttl + OKW crosswalk into Oxigraph (auto-run by devdeploy)"
 	@echo "make heartbeat     — trigger immediate heartbeat cycle locally"
 	@echo "make devdeploy     — rebuild + seed + heartbeat (mirrors publish, locally)"
 	@echo "make reset         — DESTRUCTIVE: wipe Oxigraph + heartbeat DB, then devdeploy"

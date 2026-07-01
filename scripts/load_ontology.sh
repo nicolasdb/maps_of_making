@@ -52,4 +52,16 @@ else
   exit 1
 fi
 
-echo "✅ All ontologies loaded successfully"
+# Load OKW crosswalk
+echo "  Loading mom-to-okw.ttl → <urn:mak:crosswalk/mom-to-okw>..."
+if $CURL_PREFIX curl -X PUT \
+  -H "Content-Type: text/turtle" \
+  --data-binary @ontology/crosswalks/mom-to-okw.ttl \
+  "$OXIGRAPH_URL/store?graph=urn:mak:crosswalk/mom-to-okw" 2>&1; then
+  echo "    ✅ OKW crosswalk loaded"
+else
+  echo "    ❌ Failed to load OKW crosswalk"
+  exit 1
+fi
+
+echo "✅ All ontologies and crosswalks loaded successfully"
