@@ -1,5 +1,5 @@
 bot:
-  model: google/gemma-3-12b-it       # OpenRouter id; no Gemma-4-12b variant exists (only 26b/31b), 3-12b is the closest size match
+  model: google/gemma-4-26b-a4b-it  # OpenRouter id; Gemma 3 has no real tool-calling — Gemma 4 does (native function calling). MoE 4B-active. :free tier hit shared rate limits during 6.9 spike testing — paid tier avoids that.
   matrix_homeserver: http://dendrite:8008   # our own Dendrite service (compose network); use https://mapsofmaking.org externally
   platform_tokens: {}                # matrix access token / device id come from env, not committed
   profile:                           # asserted idempotently on boot (MatrixAdapter.ensure_profile)

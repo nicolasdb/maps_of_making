@@ -4,11 +4,17 @@ import time
 from pathlib import Path
 
 import structlog
-from nio import AsyncClient, InviteMemberEvent, MatrixRoom, RoomMessageText, UploadResponse
+from nio import AsyncClient, InviteMemberEvent, MatrixRoom, ReactionEvent, RoomMessageText, UploadResponse
 
 from message import Message
 
 log = structlog.get_logger()
+
+# The ONE confirmation signal for a pending write (Story 6.9 follow-up).
+# Deliberately a single emoji, not a set — one clear signal, not a menu of
+# equivalent options. Typed "yes" confirmation was removed entirely in favor
+# of this.
+CONFIRM_REACTION = "✅"
 
 
 class MatrixAdapter:
@@ -26,6 +32,7 @@ class MatrixAdapter:
         self._start_ts_ms: int = 0  # events older than this are pre-boot; drop them
         self.client.add_event_callback(self._on_message, RoomMessageText)
         self.client.add_event_callback(self._on_invite, InviteMemberEvent)
+        self.client.add_event_callback(self._on_reaction, ReactionEvent)
 
     async def _on_invite(self, room: MatrixRoom, event: InviteMemberEvent) -> None:
         # matrix-nio does not auto-join invites (by design, per its own
@@ -64,6 +71,42 @@ class MatrixAdapter:
             power_level=room.power_levels.get_user_level(event.sender),
             event_id=event.event_id,
             thread_id=thread_id,
+        )
+        await self._queue.put(message)
+
+    # Strip variation selectors (U+FE0E/U+FE0F) — many Matrix clients append
+    # U+FE0F ("emoji presentation") to reaction keys, so a client-sent ✅
+    # often arrives as "✅️", not the bare "✅" glyph. Comparing
+    # without stripping these silently drops every reaction.
+    _VARIATION_SELECTORS = str.maketrans("", "", "︎️")
+
+    async def _on_reaction(self, room: MatrixRoom, event: ReactionEvent) -> None:
+        if event.sender.lower() == self.client.user_id.lower():
+            return
+        if self._start_ts_ms and event.server_timestamp < self._start_ts_ms:
+            log.debug("matrix.reaction_skipped_pre_boot", event_id=event.event_id)
+            return
+        normalized_key = event.key.translate(self._VARIATION_SELECTORS)
+        if normalized_key != CONFIRM_REACTION:
+            log.debug("matrix.reaction_ignored", key=event.key, sender=event.sender, reacts_to=event.reacts_to)
+            return
+        log.info("matrix.reaction_matched", sender=event.sender, room_id=room.room_id, reacts_to=event.reacts_to)
+
+        # Synthesize a bare "yes" message — the router only acts on it if this
+        # (room, user) actually has a pending confirmation; otherwise it's a
+        # no-op, same as an unprompted "yes" typed with no pending write.
+        # event_id is the REACTED-TO message, so agent._confirm_pending can
+        # verify the reaction landed on the actual confirm prompt, not some
+        # unrelated older message.
+        message = Message(
+            text="yes",
+            user_id=event.sender,
+            room_id=room.room_id,
+            platform="matrix",
+            raw=event,
+            power_level=room.power_levels.get_user_level(event.sender),
+            event_id=event.reacts_to,
+            via_reaction=True,
         )
         await self._queue.put(message)
 
@@ -115,7 +158,8 @@ class MatrixAdapter:
     async def receive(self) -> Message:
         return await self._queue.get()
 
-    async def send(self, response: str, context: Message) -> None:
+    async def send(self, response: str, context: Message) -> str:
+        """Send a response. Returns the sent event_id (empty string on failure)."""
         content: dict = {"msgtype": "m.text", "body": response}
         thread_root = context.thread_id or context.event_id
         if thread_root:
@@ -123,11 +167,12 @@ class MatrixAdapter:
                 "rel_type": "m.thread",
                 "event_id": thread_root,
             }
-        await self.client.room_send(
+        resp = await self.client.room_send(
             room_id=context.room_id,
             message_type="m.room.message",
             content=content,
         )
+        return getattr(resp, "event_id", "") or ""
 
     async def close(self) -> None:
         if self._sync_task:

@@ -8,7 +8,7 @@ from message import Message
 
 def test_message_fields():
     fields = {f.name for f in Message.__dataclass_fields__.values()}
-    assert fields == {"text", "user_id", "room_id", "platform", "raw", "power_level", "event_id", "thread_id"}
+    assert fields == {"text", "user_id", "room_id", "platform", "raw", "power_level", "event_id", "thread_id", "via_reaction"}
 
 
 def test_message_normalises_matrix_event():

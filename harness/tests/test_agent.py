@@ -1,0 +1,340 @@
+"""Tests for harness/agent.py + harness/agent_tools.py (Story 6.9 spike):
+mom.memberOf delta arithmetic, confirm-before-write gating, permission-gated
+tool exposure, and gap-logging on unfulfillable requests."""
+import asyncio
+import json
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
+ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(ROOT / "infra" / "link_handler"))
+sys.path.insert(0, str(ROOT / "infra"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+import agent
+import agent_tools
+import bernard
+from message import Message
+
+
+@pytest.fixture(autouse=True)
+def _voice():
+    bernard.load_voice()
+
+
+@pytest.fixture(autouse=True)
+def _clear_pending():
+    agent_tools.PENDING_ACTIONS.clear()
+    yield
+    agent_tools.PENDING_ACTIONS.clear()
+
+
+def _make_message(text: str, power_level: int = 0) -> Message:
+    return Message(text=text, user_id="@u:x", room_id="!room:x", platform="matrix", raw=None, power_level=power_level)
+
+
+def _make_reaction(user_id: str = "@u:x", event_id: str = "") -> Message:
+    return Message(text="yes", user_id=user_id, room_id="!room:x", platform="matrix", raw=None,
+                    power_level=100, event_id=event_id, via_reaction=True)
+
+
+def _fake_tool_call(name: str, arguments: dict, call_id: str = "call_1"):
+    return SimpleNamespace(
+        id=call_id,
+        function=SimpleNamespace(name=name, arguments=json.dumps(arguments)),
+    )
+
+
+# ---------------------------------------------------------------------------
+# mom.memberOf delta arithmetic
+# ---------------------------------------------------------------------------
+
+def test_member_of_add_appends_new_member():
+    result = agent_tools._apply_member_of_delta(["VOW"], "add:Openfab")
+    assert result == ["VOW", "Openfab"]
+
+
+def test_member_of_add_is_idempotent():
+    result = agent_tools._apply_member_of_delta(["VOW"], "add:VOW")
+    assert result == ["VOW"]
+
+
+def test_member_of_remove_drops_member():
+    result = agent_tools._apply_member_of_delta(["VOW", "Openfab"], "remove:VOW")
+    assert result == ["Openfab"]
+
+
+def test_member_of_bare_value_treated_as_add():
+    result = agent_tools._apply_member_of_delta(["VOW"], "Openfab")
+    assert result == ["VOW", "Openfab"]
+
+
+def test_member_of_full_json_array_replaces_wholesale():
+    result = agent_tools._apply_member_of_delta(["VOW"], '["Openfab", "Hackerspace"]')
+    assert result == ["Openfab", "Hackerspace"]
+
+
+# ---------------------------------------------------------------------------
+# Write is never committed without an intervening confirmation step
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_propose_write_never_commits():
+    with patch("agent_tools.commands._can_write", return_value=(True, "ok")), \
+         patch("agent_tools.commands._validate_value", return_value=(True, "")), \
+         patch("agent_tools.git_ops.resolve_space_for_room", new=AsyncMock(return_value="openfab")), \
+         patch("agent_tools.git_ops.read_json", new=AsyncMock(return_value={"mom": {"memberOf": ["VOW"]}})), \
+         patch("agent_tools.git_ops.commit_json", new=AsyncMock()) as mock_commit:
+        result = await agent_tools.propose_write(
+            "mom.memberOf", "add:Openfab", room_id="!room:x", user_id="@u:x", power_level=100,
+        )
+
+    assert result["allowed"] is True
+    assert result["proposed_value"] == ["VOW", "Openfab"]
+    mock_commit.assert_not_called()
+    assert agent_tools.PENDING_ACTIONS[("!room:x", "@u:x")]["proposed_value"] == ["VOW", "Openfab"]
+
+
+@pytest.mark.asyncio
+async def test_agent_run_commits_only_after_confirmation():
+    tool_call = _fake_tool_call("propose_write", {"field_path": "mom.memberOf", "new_value": "add:Openfab"})
+
+    with patch("agent.llm_client.complete_with_tools", new=AsyncMock(side_effect=[
+                ("", [tool_call], "model", 1),
+                ("Current: [VOW]. Proposed: [VOW, Openfab]. Confirm?", None, "model", 1),
+            ])), \
+         patch("agent_tools.commands._can_write", return_value=(True, "ok")), \
+         patch("agent_tools.commands._validate_value", return_value=(True, "")), \
+         patch("agent_tools.git_ops.resolve_space_for_room", new=AsyncMock(return_value="openfab")), \
+         patch("agent_tools.git_ops.read_json", new=AsyncMock(return_value={"mom": {"memberOf": ["VOW"]}})), \
+         patch("agent.git_ops.commit_json", new=AsyncMock()) as mock_commit:
+        msg = _make_message("add Openfab to VOW's networks", power_level=100)
+        first_response = await agent.run(msg, session_id="s1")
+
+    assert "Confirm" in first_response
+    mock_commit.assert_not_called()
+
+    with patch("agent.git_ops.commit_json", new=AsyncMock(return_value="abc123")) as mock_commit:
+        confirm_msg = _make_reaction()
+        second_response = await agent.run(confirm_msg, session_id="s1")
+
+    mock_commit.assert_called_once()
+    assert "abc123" in second_response or "abc123"[:7] in second_response
+
+
+@pytest.mark.asyncio
+async def test_confirm_pending_schedules_cdn_poll_when_adapter_given():
+    agent_tools.PENDING_ACTIONS[("!room:x", "@u:x")] = {
+        "field_path": "state.open", "current_value": False, "proposed_value": True,
+        "space_id": "openfab", "created_at": __import__("time").monotonic(),
+        "prompt_event_id": None,
+    }
+    reaction_msg = _make_reaction()
+    fake_adapter = object()
+
+    with patch("agent.git_ops.commit_json", new=AsyncMock(return_value="sha1")), \
+         patch("agent.commands._poll_and_refresh", new=AsyncMock()) as mock_poll:
+        await agent.run(reaction_msg, session_id="s1", adapter=fake_adapter)
+        await asyncio.sleep(0)  # let the scheduled task actually run
+
+    mock_poll.assert_called_once_with("openfab", "state.open", "true", "sha1", fake_adapter, reaction_msg)
+
+
+@pytest.mark.asyncio
+async def test_confirm_pending_skips_cdn_poll_without_adapter():
+    agent_tools.PENDING_ACTIONS[("!room:x", "@u:x")] = {
+        "field_path": "state.open", "current_value": False, "proposed_value": True,
+        "space_id": "openfab", "created_at": __import__("time").monotonic(),
+        "prompt_event_id": None,
+    }
+    reaction_msg = _make_reaction()
+
+    with patch("agent.git_ops.commit_json", new=AsyncMock(return_value="sha1")), \
+         patch("agent.commands._poll_and_refresh", new=AsyncMock()) as mock_poll:
+        await agent.run(reaction_msg, session_id="s1")  # no adapter
+
+    mock_poll.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_typed_yes_no_longer_confirms():
+    """Confirmation is reaction-only — a typed 'yes' must NOT commit, even
+    with a pending action waiting."""
+    agent_tools.PENDING_ACTIONS[("!room:x", "@u:x")] = {
+        "field_path": "state.open", "current_value": False, "proposed_value": True,
+        "space_id": "openfab", "created_at": __import__("time").monotonic(),
+        "prompt_event_id": None,
+    }
+    typed_yes = _make_message("yes", power_level=100)
+
+    with patch("agent.llm_client.complete_with_tools", new=AsyncMock(return_value=("ok", None, "model", 1))), \
+         patch("agent.git_ops.commit_json", new=AsyncMock()) as mock_commit:
+        await agent.run(typed_yes, session_id="s1")
+
+    mock_commit.assert_not_called()
+    assert ("!room:x", "@u:x") in agent_tools.PENDING_ACTIONS  # still pending — untouched
+
+
+# ---------------------------------------------------------------------------
+# Reaction-confirmation must target the actual confirm-ask message; expiry
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_reaction_confirmation_on_wrong_message_is_ignored():
+    agent_tools.PENDING_ACTIONS[("!room:x", "@u:x")] = {
+        "field_path": "state.open", "current_value": False, "proposed_value": True,
+        "space_id": "openfab", "created_at": __import__("time").monotonic(),
+        "prompt_event_id": "$correct_event",
+    }
+    reaction_msg = Message(
+        text="yes", user_id="@u:x", room_id="!room:x", platform="matrix", raw=None,
+        power_level=100, event_id="$some_other_event", via_reaction=True,
+    )
+
+    with patch("agent.git_ops.commit_json", new=AsyncMock()) as mock_commit:
+        response = await agent.run(reaction_msg, session_id="s1")
+
+    assert response == ""
+    mock_commit.assert_not_called()
+    assert ("!room:x", "@u:x") in agent_tools.PENDING_ACTIONS  # not consumed
+
+
+@pytest.mark.asyncio
+async def test_reaction_confirmation_on_correct_message_commits():
+    agent_tools.PENDING_ACTIONS[("!room:x", "@u:x")] = {
+        "field_path": "state.open", "current_value": False, "proposed_value": True,
+        "space_id": "openfab", "created_at": __import__("time").monotonic(),
+        "prompt_event_id": "$correct_event",
+    }
+    reaction_msg = Message(
+        text="yes", user_id="@u:x", room_id="!room:x", platform="matrix", raw=None,
+        power_level=100, event_id="$correct_event", via_reaction=True,
+    )
+
+    with patch("agent.git_ops.commit_json", new=AsyncMock(return_value="sha1")) as mock_commit:
+        response = await agent.run(reaction_msg, session_id="s1")
+
+    mock_commit.assert_called_once()
+    assert "sha1" in response
+
+
+@pytest.mark.asyncio
+async def test_expired_pending_action_is_not_committed():
+    import time as _time
+    agent_tools.PENDING_ACTIONS[("!room:x", "@u:x")] = {
+        "field_path": "state.open", "current_value": False, "proposed_value": True,
+        "space_id": "openfab",
+        "created_at": _time.monotonic() - agent_tools.PENDING_ACTION_TTL_SECONDS - 1,
+        "prompt_event_id": None,
+    }
+    reaction_msg = _make_reaction()
+
+    with patch("agent.git_ops.commit_json", new=AsyncMock()) as mock_commit:
+        response = await agent.run(reaction_msg, session_id="s1")
+
+    mock_commit.assert_not_called()
+    assert ("!room:x", "@u:x") not in agent_tools.PENDING_ACTIONS
+    assert response == bernard.write_confirmation_expired_ack()
+
+
+@pytest.mark.asyncio
+async def test_a_different_users_reaction_does_not_confirm_someone_elses_write():
+    """(room_id, user_id) keying means Jason reacting ✅ on nicolas's confirm
+    prompt looks up a pending action for (room, jason) — which doesn't exist —
+    not nicolas's. Confirms cross-user isolation by construction."""
+    agent_tools.PENDING_ACTIONS[("!room:x", "@nicolas:x")] = {
+        "field_path": "state.open", "current_value": False, "proposed_value": True,
+        "space_id": "openfab", "created_at": __import__("time").monotonic(),
+        "prompt_event_id": "$nicolas_confirm_prompt",
+    }
+    jasons_reaction = _make_reaction(user_id="@jason:x", event_id="$nicolas_confirm_prompt")
+
+    with patch("agent.llm_client.complete_with_tools", new=AsyncMock(return_value=("ok", None, "model", 1))), \
+         patch("agent.git_ops.commit_json", new=AsyncMock()) as mock_commit:
+        await agent.run(jasons_reaction, session_id="s1")
+
+    mock_commit.assert_not_called()
+    assert ("!room:x", "@nicolas:x") in agent_tools.PENDING_ACTIONS  # nicolas's write still pending, untouched
+
+
+# ---------------------------------------------------------------------------
+# power_level < 100 never receives propose_write in its tool list
+# ---------------------------------------------------------------------------
+
+def test_build_tools_excludes_write_tool_for_non_coordinator():
+    tools = agent_tools.build_tools(power_level=0)
+    tool_names = {t["function"]["name"] for t in tools}
+    assert "propose_write" not in tool_names
+
+
+def test_build_tools_includes_write_tool_for_coordinator():
+    tools = agent_tools.build_tools(power_level=100)
+    tool_names = {t["function"]["name"] for t in tools}
+    assert "propose_write" in tool_names
+
+
+@pytest.mark.asyncio
+async def test_agent_run_passes_reduced_tools_for_non_coordinator():
+    mock_complete = AsyncMock(return_value=("no can do", None, "model", 1))
+    with patch("agent.llm_client.complete_with_tools", new=mock_complete):
+        msg = _make_message("add Openfab to VOW's networks", power_level=0)
+        await agent.run(msg, session_id="s1")
+
+    passed_tools = mock_complete.call_args.kwargs["tools"]
+    tool_names = {t["function"]["name"] for t in passed_tools}
+    assert "propose_write" not in tool_names
+
+
+# ---------------------------------------------------------------------------
+# Unfulfillable request calls log_gap with the correct gap_kind
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_log_gap_capability_writes_sqlite_row(tmp_path, monkeypatch):
+    db_path = str(tmp_path / "capability_gaps.db")
+    monkeypatch.setenv("CAPABILITY_GAPS_DB_PATH", db_path)
+
+    await agent_tools.log_gap("what time is it in Taipei", "no timezone tool", "capability", room_id="!room:x")
+
+    import sqlite3
+    con = sqlite3.connect(db_path)
+    rows = con.execute("SELECT raw_request, note, room_id FROM capability_gaps").fetchall()
+    con.close()
+    assert rows == [("what time is it in Taipei", "no timezone tool", "!room:x")]
+
+
+@pytest.mark.asyncio
+async def test_log_gap_ontology_calls_emit_gap_triple():
+    with patch("agent_tools.nl_to_sparql._emit_gap_triple", new=AsyncMock()) as mock_emit:
+        await agent_tools.log_gap("what's the ontology term for X", "no match", "ontology")
+
+    mock_emit.assert_called_once_with("what's the ontology term for X", "no match")
+
+
+@pytest.mark.asyncio
+async def test_agent_run_dispatches_log_gap_tool_call(monkeypatch, tmp_path):
+    monkeypatch.setenv("CAPABILITY_GAPS_DB_PATH", str(tmp_path / "capability_gaps.db"))
+    tool_call = _fake_tool_call("log_gap", {
+        "raw_request": "what time is it in Taipei, is it open now?",
+        "note": "no timezone capability",
+        "gap_kind": "capability",
+    })
+
+    with patch("agent.llm_client.complete_with_tools", new=AsyncMock(side_effect=[
+                ("", [tool_call], "model", 1),
+                ("Can't do that yet — logged it.", None, "model", 1),
+            ])):
+        msg = _make_message("what time is it in Taipei, is it open now?", power_level=0)
+        response = await agent.run(msg, session_id="s1")
+
+    assert "logged" in response.lower()
+
+    import sqlite3
+    con = sqlite3.connect(str(tmp_path / "capability_gaps.db"))
+    rows = con.execute("SELECT raw_request FROM capability_gaps").fetchall()
+    con.close()
+    assert len(rows) == 1

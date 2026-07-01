@@ -86,6 +86,10 @@ def already_set_ack(state: str) -> str:
     return _bot("already_set_ack", "Already {state}. No commit needed.", state=state)
 
 
+def write_confirmation_expired_ack() -> str:
+    return _bot("write_confirmation_expired_ack", "No confirmation within a minute — dropping that one. Ask again if you still want it.")
+
+
 def read_only_ack(user: str = "") -> str:
     display = user[1:user.index(":")] if user.startswith("@") and ":" in user else user or "friend"
     return _bot("read_only_ack", "I'm sorry, {user}, I'm afraid I can't do that. You don't have the right permissions.", user=display)

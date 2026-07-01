@@ -7,6 +7,7 @@ import uuid
 from dotenv import load_dotenv
 import structlog
 
+import agent_tools
 import bernard
 import commands
 import llm_client
@@ -48,6 +49,18 @@ async def handle_message(adapter: MatrixAdapter, message) -> None:
     elif message.text.startswith(COMMAND_PREFIX):
         stripped = dataclasses.replace(message, text=message.text[len(COMMAND_PREFIX):].strip())
         bound.info("message.received", text=message.text)
+    elif (message.room_id, message.user_id) in agent_tools.PENDING_ACTIONS:
+        # A ✅ reaction (via_reaction=True, synthesized by MatrixAdapter) is
+        # never a mention or a !mom command, so it needs this bypass to reach
+        # the router at all. Scoped narrowly: only fires when this exact
+        # (room, user) has a stashed propose_write awaiting confirmation.
+        # thread_id is stamped from the pending action's stored thread_root so
+        # the commit-ack lands in the SAME Matrix thread as the confirm-ask,
+        # instead of starting a new thread rooted at the reaction's target
+        # event (see Story 6.9 follow-up: threads were fragmenting).
+        pending = agent_tools.PENDING_ACTIONS[(message.room_id, message.user_id)]
+        stripped = dataclasses.replace(message, thread_id=pending.get("thread_root", ""))
+        bound.info("message.received", text=message.text, via="pending_confirmation")
     else:
         return
 
@@ -60,13 +73,26 @@ async def handle_message(adapter: MatrixAdapter, message) -> None:
             adapter=adapter, context=message,
         )
         if response is None:
-            response = await route(stripped, session_id)
+            response = await route(stripped, session_id, adapter=adapter)
     except Exception:
         bound.exception("handle_message.unhandled_error")
         response = bernard.unknown_ack()
 
+    if not response:
+        # e.g. a reaction confirmation that landed on the wrong message — a
+        # deliberate no-op, not an error; nothing to send.
+        return
+
     bound.info("message.responded", response=response)
-    await adapter.send(response, message)
+    sent_event_id = await adapter.send(response, stripped)
+
+    pending_key = (message.room_id, message.user_id)
+    pending = agent_tools.PENDING_ACTIONS.get(pending_key)
+    if pending is not None and pending.get("prompt_event_id") is None and sent_event_id:
+        # This response was the confirm-ask itself (propose_write just ran) —
+        # stamp the sent message's event_id so a reaction-confirmation can be
+        # matched to this exact prompt, not just any pending action.
+        pending["prompt_event_id"] = sent_event_id
 
 
 async def main() -> None:

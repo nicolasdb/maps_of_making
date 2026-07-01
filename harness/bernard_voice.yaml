@@ -21,6 +21,7 @@ bot:
   open_ack: "Marked as open — committed as {sha}. Waiting for CDN propagation…"
   close_ack: "Marked as closed — committed as {sha}. Waiting for CDN propagation…"
   already_set_ack: "Already {state}. No commit needed."
+  write_confirmation_expired_ack: "No confirmation within a minute — dropping that one. Ask again if you still want it."
 
   # Permission refusals
   read_only_ack: "I'm sorry, {user}, I'm afraid I can't do that. You don't have the right permissions."
