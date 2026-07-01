@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-01
-last_updated: "2026-06-24 (6-5 → ready-for-dev: graceful failure + Bernard voice pass story created)"
+last_updated: "2026-07-01 (6-9 created: Bernard tool-calling agent spike, successor to superseded 6-5)"
 project: maps_of_making
 project_key: NOKEY
 tracking_system: file-system
@@ -193,6 +193,7 @@ development_status:
   6-6-additional-channel-adapters-discord-telegram-mattermost: backlog
   6-7-dev-env-separation-vps-test-stance: ready-for-dev
   6-8-e2e-encrypted-rooms-spike: ready-for-dev
+  6-9-bernard-tool-calling-agent-spike: ready-for-dev  # 2026-07-01: successor to superseded 6-5; plan at ~/.claude/plans/eventual-leaping-dream.md — tool-calling loop over existing effect functions, memberOf delta proves confirm-before-write, hardcoded graceful-failure bedrock stays separate from LLM-generated voice
   epic-6-retrospective: optional
 
   # Epic 7: 🟢 "Open Now" Presence Layer (parked indefinitely — 2026-05-06)

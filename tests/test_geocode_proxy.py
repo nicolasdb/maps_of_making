@@ -3,14 +3,19 @@
 Requires the full stack running (mak-link-handler + nginx).
 Run: pytest tests/test_geocode_proxy.py -v
 
-Isolation note: uses distrobox-host-exec podman compose to reach the stack;
-nginx enforces the 2 req/s/IP rate-limit — the rapid-fire test hits that cap.
+Repointed 2026-07-01: mak-link-handler's port 8000 is `expose`d in
+infra/docker-compose.yml, never `ports`-published to the host — by design, it's
+only reachable via nginx's /api/ proxy_pass or `podman exec` (see Makefile's
+health/heartbeat targets). BASE_URL now goes through nginx, which also fixes
+test_geocode_nginx_rate_limit below: it was hardcoded to port 80 (VPS-only),
+but local dev maps nginx to 8080 (docker-compose.dev.yml) — both tests now
+share one configurable entry point via GEOCODE_BASE_URL.
 """
-import time
+import os
 import pytest
 import httpx
 
-BASE_URL = "http://localhost:8000"  # mak-link-handler direct; nginx on 80/443
+BASE_URL = os.getenv("GEOCODE_BASE_URL", "http://localhost:8080")  # nginx; VPS uses 80/443
 
 
 @pytest.mark.live
@@ -67,14 +72,14 @@ def test_geocode_no_result():
 
 @pytest.mark.live
 def test_geocode_nginx_rate_limit():
-    """3 rapid POSTs through nginx (port 80) → third returns 429.
+    """3 rapid POSTs through nginx → third returns 429.
 
     nginx limit_req_zone geocode_limit: rate=2r/s, burst=5 nodelay.
     Send 8 requests in tight succession to reliably exceed burst.
     Note: tests directly against link-handler (port 8000) bypass nginx rate-limiting;
-    run this against port 80 (nginx) to exercise the zone.
+    BASE_URL already goes through nginx (see module docstring).
     """
-    nginx_url = "http://localhost:80/api/geocode"
+    nginx_url = f"{BASE_URL}/api/geocode"
     payload = {"address": "Rue Royale 1", "city": "Brussels", "postcode": "1000", "country_code": "BE"}
     statuses = []
     for _ in range(8):

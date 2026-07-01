@@ -143,25 +143,39 @@ ASK {{ GRAPH <{CANARY_GRAPH}> {{ <{CANARY_SUBJECT}> mom:{pred} ?v }} }}"""
 class TestMaterializerExposesMom:
     """AC 7: materializer SELECT now includes countryCode/timeZone; feature props exposed."""
 
-    def test_materialize_geojson_includes_country_code_and_timezone(self, tmp_path):
-        """Run materialize_geojson.py; check Mother Sands feature has country_code/timezone."""
+    def test_materialize_geojson_includes_country_code_and_timezone(self, monkeypatch, tmp_path):
+        """Run the live materializer; check Mother Sands feature has country_code/timezone.
+
+        Repointed 2026-07-01: scripts/materialize_geojson.py was deleted 2026-06-03
+        (commit 6ddf9db, honest-inventory triage) as a hand-synced duplicate of the
+        live `_rematerialize_geojson` in infra/link_handler/main.py. The subprocess
+        call below was failing silently and this test was falling back to reading
+        stale web/data/spaces.geojson instead of exercising the materializer at all.
+        See tests/test_materializer_three_tokens.py::_materialize_spaces for the
+        established repoint pattern this mirrors.
+        """
+        import asyncio
         import tempfile
 
-        output = tmp_path / "spaces.geojson"
-        env = {
-            **os.environ,
-            "OXIGRAPH_URL": OXIGRAPH_URL,
-        }
-        result = subprocess.run(
-            [sys.executable, str(REPO_ROOT / "scripts" / "materialize_geojson.py")],
-            capture_output=True, text=True, timeout=60, env=env,
-        )
-        # materialize_geojson writes to web/data/spaces.geojson — read from there
-        geojson_path = REPO_ROOT / "web" / "data" / "spaces.geojson"
-        if not geojson_path.exists():
-            pytest.skip("spaces.geojson not yet written — run materialize_geojson.py first")
+        sys.path.insert(0, str(REPO_ROOT / "infra" / "link_handler"))
+        import main as link_handler_main
 
-        data = json.loads(geojson_path.read_text())
+        monkeypatch.setenv("SNAPSHOT_DB_PATH", str(tmp_path / "snapshot_store.db"))
+        link_handler_main.OXIGRAPH_ENDPOINT = OXIGRAPH_URL
+        fd, out_path = tempfile.mkstemp(suffix=".geojson")
+        os.close(fd)
+        link_handler_main.GEOJSON_OUTPUT = out_path
+        try:
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            loop.run_until_complete(link_handler_main._rematerialize_geojson())
+            data = json.loads(Path(out_path).read_text())
+        finally:
+            Path(out_path).unlink(missing_ok=True)
+
         features = data.get("features", [])
         canary_features = [
             f for f in features
