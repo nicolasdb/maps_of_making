@@ -1,0 +1,134 @@
+@prefix mom: <https://nicolasdb.github.io/mapsofmaking_ontology/ns#> .
+@prefix okw: <https://github.com/iop-alliance/OpenKnowWhere/raw/main/src/okw_core.ttl#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix wd: <https://www.wikidata.org/entity/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MOM → OKW Crosswalk
+# Maps of Making activity concepts ↔ OpenKnowWhere manufacturing processes
+#
+# Alignment strategy:
+#   Both MOM and OHM (Open Hardware Manager) previously used Wikipedia URLs
+#   as vocabulary anchors. This crosswalk adopts Wikidata QIDs as the shared
+#   canonical hub, so alignment is:
+#
+#     mom:Concept --owl:sameAs--> wd:QXXXXX <--schema:about-- Wikipedia URL (OHM)
+#
+#   The Wikidata links are also present on each mom: concept in mom.ttl.
+#   This file exists to express the OKW-side alignment explicitly and to
+#   document the translation gaps.
+#
+# OKW reference:
+#   https://github.com/iop-alliance/OpenKnowWhere
+# ─────────────────────────────────────────────────────────────────────────────
+
+<https://nicolasdb.github.io/mapsofmaking_ontology/crosswalks/mom-to-okw>
+  a owl:Ontology ;
+  rdfs:label "MOM–OKW Crosswalk" ;
+  rdfs:comment "Alignment between Maps of Making activity vocabulary and OpenKnowWhere manufacturing process concepts. Wikidata QIDs serve as the shared canonical anchor." ;
+  dcterms:created "2026-06-29" .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Digital Fabrication
+# ─────────────────────────────────────────────────────────────────────────────
+
+# 3D Printing — strong match
+# MOM: mom:ThreeDPrinting (wd:Q229367)
+# OKW: okw:3DPrinting / okw:AdditiveManufacturing
+# Wikipedia (OHM): https://en.wikipedia.org/wiki/3D_printing
+mom:ThreeDPrinting
+  skos:closeMatch okw:3DPrinting ;
+  owl:sameAs wd:Q229367 .
+
+# Laser Cutting — strong match
+# MOM: mom:LaserCutting (wd:Q3062349)
+# OKW: okw:LaserCutting
+# Wikipedia (OHM): https://en.wikipedia.org/wiki/Laser_cutting
+mom:LaserCutting
+  skos:closeMatch okw:LaserCutting ;
+  owl:sameAs wd:Q3062349 .
+
+# CNC Machining — strong match
+# MOM: mom:CNC (wd:Q174689)
+# OKW: okw:CNCMilling, okw:CNCRouting (OKW is more granular)
+# Wikipedia (OHM): https://en.wikipedia.org/wiki/Numerical_control
+# Translation note: MOM uses a single mom:CNC concept; OKW distinguishes
+# milling vs routing vs turning. Use skos:narrowMatch for OKW subtypes.
+mom:CNC
+  skos:closeMatch okw:CNCMilling ;
+  skos:closeMatch okw:CNCRouting ;
+  owl:sameAs wd:Q174689 .
+
+# Turning (Lathe) — strong match
+# MOM: mom:Turning (wd:Q1260093) — narrower under mom:CNC in practice
+# OKW: okw:Turning
+mom:Turning
+  skos:closeMatch okw:Turning ;
+  owl:sameAs wd:Q1260093 .
+
+# Vinyl Cutting — approximate match (OKW may not have explicit concept)
+# MOM: mom:VinylCutting (wd:Q1303073)
+# OKW: closest is okw:CNCRouting or no exact match
+mom:VinylCutting
+  skos:relatedMatch okw:CNCRouting ;
+  owl:sameAs wd:Q1303073 .
+
+# Vacuum Forming — strong match
+# MOM: mom:VacuumForming (wd:Q1149785)
+# OKW: okw:VacuumForming
+mom:VacuumForming
+  skos:closeMatch okw:VacuumForming ;
+  owl:sameAs wd:Q1149785 .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Electronics
+# ─────────────────────────────────────────────────────────────────────────────
+
+# PCB Fabrication — strong match
+# MOM: mom:PCBFabrication (wd:Q1047286)
+# OKW: okw:PCBFabrication or okw:PCBMilling
+# Wikipedia (OHM): https://en.wikipedia.org/wiki/Printed_circuit_board
+mom:PCBFabrication
+  skos:closeMatch okw:PCBFabrication ;
+  owl:sameAs wd:Q1047286 .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Metalworking / Welding
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Welding — strong match
+# MOM: mom:Welding (wd:Q12544) — narrower under mom:Metalworking
+# OKW: okw:Welding
+# Wikipedia (OHM): https://en.wikipedia.org/wiki/Welding
+mom:Welding
+  skos:closeMatch okw:Welding ;
+  owl:sameAs wd:Q12544 .
+
+# Metalworking (broad) — approximate match
+# MOM: mom:Metalworking (wd:Q15328133)
+# OKW: no single broad concept — OKW is process-granular
+# Translation note: map by querying mom:Metalworking and all skos:narrower
+mom:Metalworking
+  skos:relatedMatch okw:Welding ;
+  skos:relatedMatch okw:CNCMilling ;
+  owl:sameAs wd:Q15328133 .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Translation gap register
+# ─────────────────────────────────────────────────────────────────────────────
+# MOM concepts with no OKW equivalent (as of OKW v0.5):
+#   mom:Woodworking        → OKW has no woodworking process class
+#   mom:Textiles           → OKW has no textiles process class
+#   mom:Ceramics           → OKW has no ceramics process class
+#   mom:Photography        → outside OKW scope (fabrication focus)
+#   mom:Biology            → outside OKW scope
+#   mom:FoodProduction     → outside OKW scope
+#
+# OKW concepts with no MOM equivalent (as of MOM v0.2):
+#   okw:InjectionMolding   → gap; consider minting mom:InjectionMolding
+#   okw:SheetMetalForming  → gap; nearest is mom:Metalworking (broad)
+#   okw:WireEDM            → gap; nearest is mom:CNC (very approximate)
+# ─────────────────────────────────────────────────────────────────────────────

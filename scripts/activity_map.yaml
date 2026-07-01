@@ -1,7 +1,8 @@
 # Activity tag → MOM ontology IRI mapping
-# Keys: lowercase source strings (German, English, French)
+# Keys: lowercase source strings (German, English, French, multilingual)
 # Values: full ontology IRIs
 # Case-insensitive matching is done in code; keys stored lowercase here.
+# All target IRIs must have a matching concept definition in ontology/mom.ttl.
 
 # German VOW categories
 "3d-druck": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#ThreeDPrinting"
@@ -10,8 +11,8 @@
 "elektronik": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Electronics"
 "laserschneiden": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#LaserCutting"
 "laser": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#LaserCutting"
-"cnc-fräse": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#CNCMilling"
-"cnc-frase": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#CNCMilling"
+"cnc-fräse": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#CNC"
+"cnc-frase": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#CNC"
 "textil": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Textiles"
 "metall": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Metalworking"
 "programmieren": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Programming"
@@ -33,8 +34,8 @@
 "3d printing": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#ThreeDPrinting"
 "laser-cutting": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#LaserCutting"
 "laser cutting": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#LaserCutting"
-"cnc": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#CNCMilling"
-"cnc-milling": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#CNCMilling"
+"cnc": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#CNC"
+"cnc-milling": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#CNC"
 "electronics": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Electronics"
 "woodworking": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Woodworking"
 "wood": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Woodworking"
@@ -56,6 +57,18 @@
 "vinyl-cutting": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#VinylCutting"
 "game-design": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#GameDesign"
 "embedded-systems": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#EmbeddedSystems"
+"precision-milling": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#CNC"
+"welding": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Welding"
+"pcb-fabrication": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#PCBFabrication"
+"pcb": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#PCBFabrication"
+"circuit-board": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#PCBFabrication"
+"turning": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Turning"
+"lathe": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Turning"
+"vacuum-forming": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#VacuumForming"
+"thermoforming": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#VacuumForming"
+"repair": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#RepairAndReuse"
+"food": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#FoodProduction"
+"food-production": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#FoodProduction"
 
 # French RFF categories
 "impression 3d": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#ThreeDPrinting"
@@ -70,3 +83,11 @@
 "couture": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Textiles"
 "photographie": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Photography"
 "programmation": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Programming"
+"soudure": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Welding"
+"fabrication de circuits": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#PCBFabrication"
+"alimentation": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#FoodProduction"
+"impression": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Printing"
+"peinture": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Painting"
+"biologie": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Biology"
+"céramique": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Ceramics"
+"ceramique": "https://nicolasdb.github.io/mapsofmaking_ontology/ns#Ceramics"

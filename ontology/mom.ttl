@@ -6,14 +6,14 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix wd: <https://www.wikidata.org/entity/> .
 
-# MOM Ontology v0 — Maps of Making vocabulary
+# MOM Ontology — Maps of Making vocabulary
 # A minimal application vocabulary extending Schema.org
 
 <https://nicolasdb.github.io/mapsofmaking_ontology/ns#>
   a owl:Ontology ;
   rdfs:label "Maps of Making Ontology" ;
-  owl:versionInfo "0.1" ;
-  rdfs:comment "Minimal application vocabulary for federated maker space infrastructure. Extends Schema.org with space-specific operational metadata." .
+  owl:versionInfo "0.2" ;
+  rdfs:comment "Minimal application vocabulary for federated maker space infrastructure. Extends Schema.org with space-specific operational metadata. Activity concepts carry owl:sameAs Wikidata links as canonical cross-system anchors; OKW manufacturing capability crosswalk in ontology/crosswalks/mom-to-okw.ttl." .
 
 # Classes
 
@@ -111,7 +111,8 @@ mom:DigitalFabrication
   skos:inScheme mom:ActivityScheme ;
   skos:prefLabel "digital-fabrication" ;
   skos:altLabel "fab", "digital manufacturing", "fabrication numérique", "digitale fabricatie" ;
-  rdfs:label "Digital Fabrication" .
+  rdfs:label "Digital Fabrication" ;
+  owl:sameAs wd:Q1133691 .
 
 mom:Electronics
   a skos:Concept ;
@@ -125,7 +126,7 @@ mom:SoftwareAndAI
   a skos:Concept ;
   skos:inScheme mom:ActivityScheme ;
   skos:prefLabel "software-and-ai" ;
-  skos:altLabel "software", "logiciel", "programmation", "coding" ;
+  skos:altLabel "software", "logiciel", "computer science", "informatique" ;
   rdfs:label "Software & AI" .
 
 mom:Games
@@ -135,13 +136,54 @@ mom:Games
   skos:altLabel "game design", "game development", "jeux", "spelontwikkeling" ;
   rdfs:label "Games" .
 
+mom:Crafts
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "crafts" ;
+  skos:altLabel "handcraft", "artisanat", "ambachten", "traditional making" ;
+  rdfs:label "Crafts" ;
+  owl:sameAs wd:Q2207288 .
+
+mom:Arts
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "arts" ;
+  skos:altLabel "art", "arts", "kunst", "beaux-arts" ;
+  rdfs:label "Arts" ;
+  owl:sameAs wd:Q735 .
+
+mom:Science
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "science" ;
+  skos:altLabel "research", "recherche", "wetenschappen" ;
+  rdfs:label "Science" ;
+  owl:sameAs wd:Q336 .
+
+mom:RepairAndReuse
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "repair-and-reuse" ;
+  skos:altLabel "repair", "reparation", "réparation", "repareer", "right to repair", "circular economy" ;
+  rdfs:label "Repair & Reuse" ;
+  owl:sameAs wd:Q12059 .
+
+mom:FoodProduction
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "food-production" ;
+  skos:altLabel "food", "lebensmittel", "alimentation", "voedsel", "brewing", "fermentation" ;
+  rdfs:label "Food Production" ;
+  owl:sameAs wd:Q33290 .
+
 # ── Digital Fabrication narrower ──────────────────────────────────────────────
 
 mom:ThreeDPrinting
   a skos:Concept ;
   skos:inScheme mom:ActivityScheme ;
   skos:prefLabel "3d-printing" ;
-  skos:altLabel "3D printing", "FDM", "SLA", "impression 3D", "3D printen", "additive manufacturing" ;
+  skos:altLabel "3D printing", "FDM", "SLA", "impression 3D", "3D printen", "additive manufacturing",
+                "3d-druck", "3druck" ;
   skos:broader mom:DigitalFabrication ;
   rdfs:label "3D Printing" ;
   owl:sameAs wd:Q229367 .
@@ -150,15 +192,19 @@ mom:LaserCutting
   a skos:Concept ;
   skos:inScheme mom:ActivityScheme ;
   skos:prefLabel "laser-cutting" ;
-  skos:altLabel "laser cutter", "laser engraving", "découpe laser", "lasercutting" ;
+  skos:altLabel "laser", "laser cutter", "laser engraving", "découpe laser", "lasercutting",
+                "laserschneiden", "découpe-laser", "decoupe laser" ;
   skos:broader mom:DigitalFabrication ;
-  rdfs:label "Laser Cutting" .
+  rdfs:label "Laser Cutting" ;
+  owl:sameAs wd:Q3062349 .
 
 mom:CNC
   a skos:Concept ;
   skos:inScheme mom:ActivityScheme ;
   skos:prefLabel "cnc" ;
-  skos:altLabel "CNC milling", "CNC routing", "fraiseuse CNC", "CNC frezen", "subtractive manufacturing" ;
+  skos:altLabel "CNC milling", "CNC routing", "cnc-milling", "precision-milling",
+                "fraiseuse CNC", "CNC frezen", "subtractive manufacturing",
+                "cnc-fräse", "cnc-frase" ;
   skos:broader mom:DigitalFabrication ;
   rdfs:label "CNC Machining" ;
   owl:sameAs wd:Q174689 .
@@ -169,7 +215,26 @@ mom:VinylCutting
   skos:prefLabel "vinyl-cutting" ;
   skos:altLabel "vinyl cutter", "plotter", "découpe vinyle", "sticker cutting" ;
   skos:broader mom:DigitalFabrication ;
-  rdfs:label "Vinyl Cutting" .
+  rdfs:label "Vinyl Cutting" ;
+  owl:sameAs wd:Q1303073 .
+
+mom:VacuumForming
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "vacuum-forming" ;
+  skos:altLabel "thermoforming", "vacuum forming", "vacuümvormen", "formage sous vide" ;
+  skos:broader mom:DigitalFabrication ;
+  rdfs:label "Vacuum Forming" ;
+  owl:sameAs wd:Q1149785 .
+
+mom:Turning
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "turning" ;
+  skos:altLabel "lathe", "tour", "draaien", "drehmaschine" ;
+  skos:broader mom:DigitalFabrication ;
+  rdfs:label "Turning (Lathe)" ;
+  owl:sameAs wd:Q1260093 .
 
 # ── Electronics narrower ──────────────────────────────────────────────────────
 
@@ -184,7 +249,27 @@ mom:EmbeddedSystems
   rdfs:label "Embedded Systems" ;
   owl:sameAs wd:Q189443 .
 
+mom:PCBFabrication
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "pcb-fabrication" ;
+  skos:altLabel "PCB", "circuit board", "printed circuit board", "PCB milling",
+                "circuit imprimé", "platine", "etching" ;
+  skos:broader mom:Electronics ;
+  rdfs:label "PCB Fabrication" ;
+  owl:sameAs wd:Q1047286 .
+
 # ── Software & AI narrower ────────────────────────────────────────────────────
+
+mom:Programming
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "programming" ;
+  skos:altLabel "coding", "programmation", "programmieren", "software development",
+                "développement logiciel", "softwareontwikkeling" ;
+  skos:broader mom:SoftwareAndAI ;
+  rdfs:label "Programming" ;
+  owl:sameAs wd:Q80006 .
 
 mom:AgenticAI
   a skos:Concept ;
@@ -206,6 +291,138 @@ mom:GameDesign
                 "conception de jeux", "speldesign" ;
   skos:broader mom:Games ;
   rdfs:label "Game Design" .
+
+# ── Crafts narrower ───────────────────────────────────────────────────────────
+
+mom:Woodworking
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "woodworking" ;
+  skos:altLabel "wood", "holz", "menuiserie", "houtbewerking", "carpentry", "joinery" ;
+  skos:broader mom:Crafts ;
+  rdfs:label "Woodworking" ;
+  owl:sameAs wd:Q287483 .
+
+mom:Metalworking
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "metalworking" ;
+  skos:altLabel "metal", "metall", "métallurgie", "metaalbewerking", "forge", "blacksmithing" ;
+  skos:broader mom:Crafts ;
+  rdfs:label "Metalworking" ;
+  owl:sameAs wd:Q15328133 .
+
+mom:Welding
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "welding" ;
+  skos:altLabel "soudure", "lassen", "schweißen", "MIG", "TIG", "arc welding" ;
+  skos:broader mom:Metalworking ;
+  rdfs:label "Welding" ;
+  owl:sameAs wd:Q12544 .
+
+mom:Textiles
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "textiles" ;
+  skos:altLabel "sewing", "couture", "textil", "naaiwerk", "fabric", "knitting", "weaving" ;
+  skos:broader mom:Crafts ;
+  rdfs:label "Textiles" ;
+  owl:sameAs wd:Q28823 .
+
+mom:Embroidery
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "embroidery" ;
+  skos:altLabel "broderie", "borduurwerk", "stickerei" ;
+  skos:broader mom:Textiles ;
+  rdfs:label "Embroidery" ;
+  owl:sameAs wd:Q11464 .
+
+mom:Ceramics
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "ceramics" ;
+  skos:altLabel "pottery", "keramik", "céramique", "keramiek", "töpfern", "topfern" ;
+  skos:broader mom:Crafts ;
+  rdfs:label "Ceramics" ;
+  owl:sameAs wd:Q13151 .
+
+mom:Stonework
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "stonework" ;
+  skos:altLabel "stone", "stein", "pierre", "steenbewerking", "masonry", "carving" ;
+  skos:broader mom:Crafts ;
+  rdfs:label "Stonework" ;
+  owl:sameAs wd:Q29026 .
+
+mom:BicycleRepair
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "bicycle-repair" ;
+  skos:altLabel "bike repair", "fahrrad", "vélo", "fiets", "cycling" ;
+  skos:broader mom:RepairAndReuse ;
+  rdfs:label "Bicycle Repair" ;
+  owl:sameAs wd:Q170683 .
+
+# ── Arts narrower ─────────────────────────────────────────────────────────────
+
+mom:Photography
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "photography" ;
+  skos:altLabel "fotografie", "photographie", "fotolabor", "darkroom" ;
+  skos:broader mom:Arts ;
+  rdfs:label "Photography" ;
+  owl:sameAs wd:Q11633 .
+
+mom:Printing
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "printing" ;
+  skos:altLabel "druckverfahren", "sérigraphie", "risograph", "screen printing", "letterpress" ;
+  skos:broader mom:Arts ;
+  rdfs:label "Printing" ;
+  owl:sameAs wd:Q11060274 .
+
+mom:Painting
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "painting" ;
+  skos:altLabel "malerei", "peinture", "schilderen", "drawing" ;
+  skos:broader mom:Arts ;
+  rdfs:label "Painting" ;
+  owl:sameAs wd:Q11629 .
+
+mom:DigitalMedia
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "digital-media" ;
+  skos:altLabel "digitale medien", "médias numériques", "video", "audio", "multimedia" ;
+  skos:broader mom:Arts ;
+  rdfs:label "Digital Media" ;
+  owl:sameAs wd:Q16979507 .
+
+# ── Science narrower ──────────────────────────────────────────────────────────
+
+mom:Biology
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "biology" ;
+  skos:altLabel "biologie", "biohacking", "biolab", "wetlab", "DIY bio" ;
+  skos:broader mom:Science ;
+  rdfs:label "Biology" ;
+  owl:sameAs wd:Q420 .
+
+mom:Plastics
+  a skos:Concept ;
+  skos:inScheme mom:ActivityScheme ;
+  skos:prefLabel "plastics" ;
+  skos:altLabel "kunststoff", "matières plastiques", "plastics processing", "recycled plastic" ;
+  skos:broader mom:Crafts ;
+  rdfs:label "Plastics Processing" ;
+  owl:sameAs wd:Q11474 .
 
 # Ontology gap tracking
 # ──────────────────────────────────────────────────────────────────────────────

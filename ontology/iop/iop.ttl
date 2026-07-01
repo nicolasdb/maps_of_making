@@ -32,7 +32,7 @@ iop:Activity a owl:Class ;
 
 iop:Equipment a owl:Class ;
   rdfs:label "Equipment" ;
-  rdfs:comment "A tool or machine available at a place. STUB ONLY — capability/equipment semantics map to OKW (Open Know-Where) via ontology/crosswalks/mom-to-okw.ttl; do not add properties here." .
+  rdfs:comment "A tool or machine available at a place. Manufacturing capability and process semantics are aligned to OKW (Open Know-Where) via ontology/crosswalks/mom-to-okw.ttl — add process-specific properties there, not here." .
 
 iop:Network a owl:Class ;
   rdfs:label "Network" ;

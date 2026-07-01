@@ -1,0 +1,66 @@
+# Mac/Docker local dev override
+# Usage: make mac-up (spins up MoM stack + OHM)
+#        make mac-down
+#        make mac-init  (load ontologies, seed test data, trigger heartbeat)
+#
+# Differences from docker-compose.dev.yml (Fedora/Podman):
+#   - Strips SELinux :z volume flags (not applicable on macOS)
+#   - Uses docker compose (not podman compose)
+#   - Skips dendrite, dendrite-postgres, mak-agent-bot (no config available locally)
+#   - Adds OHM (Open Hardware Manager) for integration testing
+
+services:
+  maps-nginx:
+    networks:
+      - internal
+    ports:
+      - "8080:80"
+    volumes:
+      - ../web:/var/www/mapsofmaking:ro
+      - ../web/data:/var/www/mapsofmaking/data
+      - ../web/canary:/var/www/mapsofmaking/canary
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../data/logs/nginx:/var/log/nginx
+      - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+
+  mak-link-handler:
+    volumes:
+      - ../web/data:/app/web_data
+      - ../scripts:/app/scripts:ro
+      - ../web/canary:/app/web/canary:ro
+      - ../data/tasks:/app/tasks
+      - ../data/canary:/app/data/canary:ro
+      - ../data/bot-keys:/app/bot-keys
+    environment:
+      - SCRIPTS_DIR=/app/scripts
+
+  oxigraph:
+    ports:
+      - "7878:7878"
+    volumes:
+      - ../data/oxigraph:/data
+
+  ohm:
+    image: touchthesun/openhardwaremanager:0.8.5
+    container_name: maps-ohm
+    command: api
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=development
+      - API_PORT=8001
+      - LOG_LEVEL=warning
+    volumes:
+      - ../data/ohm:/app/storage
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+networks:
+  gateway:
+    external: false

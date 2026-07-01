@@ -1,0 +1,537 @@
+[
+  {
+    "@type": "mom:Space",
+    "schema:name": "FabLab Graz",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 47.059316,
+      "schema:longitude": 15.46422189999998
+    },
+    "schema:address": {
+      "schema:streetAddress": "Inffeldgasse 11/III",
+      "schema:postalCode": "8010",
+      "schema:addressLocality": "Graz",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://fablab.tugraz.at",
+    "mom:profileUrl": "https://www.fablabs.io/labs/fablabgraz",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:478"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Spielraum FabLab",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 47.2586701,
+      "schema:longitude": 11.39553590000003
+    },
+    "schema:address": {
+      "schema:streetAddress": "Franz-Fischer-Strae 12",
+      "schema:postalCode": "6020",
+      "schema:addressLocality": "Innsbruck",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://fablab.spielraumfueralle.at/",
+    "mom:profileUrl": "https://www.fablabs.io/labs/spielraumfablab",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:1590"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "FabLab Kapfenberg",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 47.4530357,
+      "schema:longitude": 15.3317592
+    },
+    "schema:address": {
+      "schema:streetAddress": "Kapfenberg Werk-VI-Strae 46",
+      "schema:postalCode": "8605",
+      "schema:addressLocality": "Kapfenberg",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "https://spl.fh-joanneum.at/labs/fab-lab/",
+    "mom:profileUrl": "https://www.fablabs.io/labs/fablabkapfenberg",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:1847"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Farmlab",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 46.8824529,
+      "schema:longitude": 15.9465505
+    },
+    "schema:address": {
+      "schema:streetAddress": "Kolldorf 38",
+      "schema:postalCode": "8353",
+      "schema:addressLocality": "Kapfenstein",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://farmlab.at",
+    "mom:profileUrl": "https://www.fablabs.io/labs/farmlab",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "laser"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:2523"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "OpenLandLAB",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 47.1621928,
+      "schema:longitude": 16.34716690000005
+    },
+    "schema:address": {
+      "schema:streetAddress": "Kirchfidisch Hauptstrasse 8",
+      "schema:postalCode": "7512",
+      "schema:addressLocality": "Kirchfidisch",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://www.openlandlab.org",
+    "mom:profileUrl": "https://www.fablabs.io/labs/OpenLandLAB",
+    "schema:knowsAbout": [
+      "cnc"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:unknown;kind:fab_lab;idcode:1077"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "smartlab Carinthia",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 46.6140882,
+      "schema:longitude": 14.2665806
+    },
+    "schema:address": {
+      "schema:streetAddress": "Lakeside B12",
+      "schema:postalCode": "9020",
+      "schema:addressLocality": "Klagenfurt",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "https://smartlabcarinthia.at",
+    "mom:profileUrl": "https://www.fablabs.io/labs/SmartlabCarinthia",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:769"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "FabLab Uni Klagenfurt",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 46.6160291,
+      "schema:longitude": 14.2652247
+    },
+    "schema:address": {
+      "schema:streetAddress": "Universitatsstrae 65-67",
+      "schema:postalCode": "9020",
+      "schema:addressLocality": "Klagenfurt am Worthersee",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "https://www.aau.at/fablab/",
+    "mom:profileUrl": "https://www.fablabs.io/labs/fablabuniklagenfurt",
+    "schema:knowsAbout": [
+      "3d-printing"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:planned;kind:fab_lab;idcode:1872"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Fablab Leoben",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 47.3810172,
+      "schema:longitude": 15.0963055
+    },
+    "schema:address": {
+      "schema:streetAddress": "Langgasse 11",
+      "schema:postalCode": "8700",
+      "schema:addressLocality": "Leoben",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://www.fablab-Leoben.at",
+    "mom:profileUrl": "https://www.fablabs.io/labs/FabLabLeoben",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "precision-milling"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:1161"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Hand.Werk.Stadt - Modling",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 48.0831252,
+      "schema:longitude": 16.2997655
+    },
+    "schema:address": {
+      "schema:streetAddress": "DI-Wilhelm-Halinger-Strae 3 / Halle 6",
+      "schema:postalCode": "2340",
+      "schema:addressLocality": "Modling",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://www.handwerkstadt.org/",
+    "mom:profileUrl": "https://www.fablabs.io/labs/handwerkstadt",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "laser",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:1201"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Steyr-Werke Makerspace",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 48.0427657,
+      "schema:longitude": 14.41645629999994
+    },
+    "schema:address": {
+      "schema:streetAddress": "Wehrgrabengasse 11",
+      "schema:postalCode": "4400",
+      "schema:addressLocality": "Steyr",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://www.steyr-werke.at",
+    "mom:profileUrl": "https://www.fablabs.io/labs/steyrwerkemakerspace",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:1439"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Happylab Wien",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 48.2280823,
+      "schema:longitude": 16.40016609999998
+    },
+    "schema:address": {
+      "schema:streetAddress": "Schonngasse 15 - 17",
+      "schema:postalCode": "1020",
+      "schema:addressLocality": "Vienna",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "https://www.happylab.at/",
+    "mom:profileUrl": "https://www.fablabs.io/labs/happylab",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:4"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Center for Rapid Innovation / Werkstaette Wattens",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 47.2869068,
+      "schema:longitude": 11.5923722
+    },
+    "schema:address": {
+      "schema:streetAddress": "Weisstrasse 9 Building 8a",
+      "schema:postalCode": "6112",
+      "schema:addressLocality": "Wattens",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://www.werkstaette-wattens.at/en/center-for-rapid-innovation",
+    "mom:profileUrl": "https://www.fablabs.io/labs/criwerkstaettewattens",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:794"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Maker Austria",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 48.1882792,
+      "schema:longitude": 16.34678380000003
+    },
+    "schema:address": {
+      "schema:streetAddress": "Schonbrunner Strae 125",
+      "schema:postalCode": "1050",
+      "schema:addressLocality": "Wien",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://www.makeraustria.at",
+    "mom:profileUrl": "https://www.fablabs.io/labs/makerspacevienna",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:541"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Innovation Lab FHWN",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 47.8381677,
+      "schema:longitude": 16.2506713
+    },
+    "schema:address": {
+      "schema:streetAddress": "Johannes Gutenberg-Strae 5",
+      "schema:postalCode": "2700",
+      "schema:addressLocality": "Wiener Neustadt",
+      "schema:addressCountry": "AT",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "https://innolab.fhwn.ac.at/",
+    "mom:profileUrl": "https://www.fablabs.io/labs/innolabfhwn",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:2417"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "FabLab la Cote",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 46.3840365,
+      "schema:longitude": 6.2157144
+    },
+    "schema:address": {
+      "schema:streetAddress": "Rue du Village 8A",
+      "schema:postalCode": "1273",
+      "schema:addressLocality": "Arzier",
+      "schema:addressCountry": "CH",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://www.fablab-lacote.ch",
+    "mom:profileUrl": "https://www.fablabs.io/labs/fablablacote",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:321"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Starship Factory",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 47.5406972,
+      "schema:longitude": 7.61385139999993
+    },
+    "schema:address": {
+      "schema:streetAddress": "Auf dem Wolf 13",
+      "schema:postalCode": "4052",
+      "schema:addressLocality": "Basel",
+      "schema:addressCountry": "CH",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://www.starship-factory.ch/",
+    "mom:profileUrl": "https://www.fablabs.io/labs/starshipfactory",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "electronics",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:unknown;kind:fab_lab;idcode:248"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Quartierwerkstatt Viktoria",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 46.9479739,
+      "schema:longitude": 7.4474468
+    },
+    "schema:address": {
+      "schema:streetAddress": "Gotthelfstrasse 29",
+      "schema:postalCode": "3014",
+      "schema:addressLocality": "Bern",
+      "schema:addressCountry": "CH",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "https://www.quartierwerkstatt-viktoria.ch/",
+    "mom:profileUrl": "https://www.fablabs.io/labs/qwv",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:2926"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "JouleHub Accademy - FABLabEntlebuch",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 46.9949613,
+      "schema:longitude": 8.06373880000001
+    },
+    "schema:address": {
+      "schema:streetAddress": "Bahnhofstrasse 42",
+      "schema:postalCode": "6162",
+      "schema:addressLocality": "Entlebuch",
+      "schema:addressCountry": "CH",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "https://www.joulehub.com",
+    "mom:profileUrl": "https://www.fablabs.io/labs/joulehub",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:planned;kind:fab_lab;idcode:1388"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "Fablab Fribourg Freiburg",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 46.7988235,
+      "schema:longitude": 7.147495299999946
+    },
+    "schema:address": {
+      "schema:streetAddress": "Passage du Cardinal",
+      "schema:postalCode": "1700",
+      "schema:addressLocality": "Fribourg",
+      "schema:addressCountry": "CH",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "http://www.fablab-fribourg.ch",
+    "mom:profileUrl": "https://www.fablabs.io/labs/fablabfribourg",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:378"
+  },
+  {
+    "@type": "mom:Space",
+    "schema:name": "MIY MakerS",
+    "schema:geo": {
+      "@type": "schema:GeoCoordinates",
+      "schema:latitude": 46.80070500000001,
+      "schema:longitude": 7.151794600000001
+    },
+    "schema:address": {
+      "schema:streetAddress": "Bd de Perolles 13a",
+      "schema:postalCode": "1700",
+      "schema:addressLocality": "Fribourg",
+      "schema:addressCountry": "CH",
+      "@type": "schema:PostalAddress"
+    },
+    "schema:url": "https://www.miy.ch",
+    "mom:profileUrl": "https://www.fablabs.io/labs/miymakers",
+    "schema:knowsAbout": [
+      "3d-printing",
+      "cnc",
+      "electronics",
+      "laser",
+      "precision-milling",
+      "vinyl-cutting"
+    ],
+    "mom:geolocationFidelity": "high",
+    "mom:geolocationNote": "source:fablabs.io;status:active;kind:fab_lab;idcode:1807"
+  }
+]

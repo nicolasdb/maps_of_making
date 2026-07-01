@@ -35,12 +35,17 @@ data/dendrite-postgres/*
 data/dendrite-media/*
 data/bot-keys/*
 data/bot-repos/*
+data/ohm/*
 !data/oxigraph/.gitkeep
 !data/nanoclaw/.gitkeep
 !data/dendrite-postgres/.gitkeep
 !data/dendrite-media/.gitkeep
 !data/bot-keys/.gitkeep
 !data/bot-repos/.gitkeep
+!data/ohm/.gitkeep
+
+# Integration tooling passed directly to maintainers — not in the MoM repo
+contrib/
 
 # GeoJSON is generated at deploy time (make publish → materialize_geojson.py)
 # Never commit — it is always rebuilt from Oxigraph on the VPS
