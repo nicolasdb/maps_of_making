@@ -39,7 +39,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 > - **Transform** is `scripts/spaceapi_extract/` (`core`/`mom`/`sparql`) → idempotent `DELETE WHERE + INSERT DATA`, **only on a real content change**. **Materialize** is `_rematerialize_geojson` (`main.py`) → `web/data/spaces.geojson`, the map's only source.
 > - **Derived state** (`endpointHealth`, `operationalState`, marker colour) is computed **in the browser** from the raw tokens + a `thresholds` block shipped in the GeoJSON header. Storage holds facts; consumption layers compute buckets.
 >
-> Planned-not-built directions retained below as design intent: **Epic 6** ("Ask Bernard" — one channel-agnostic bot, two skillsets; harness baseline + deploy-key write path + isochrone — **ADR-017**; Nanobot ADR-008/013 deferred to Story 6.4), **Epic 4b** (magic link — ADR-005/010/011), **Epic 7** (open-now presence — ADR-007).
+> Planned-not-built directions retained below as design intent: **Epic 4b** (magic link — ADR-005/010/011), **Epic 7** (open-now presence — ADR-007). **Epic 6** ("Ask Bernard") is 🟢 live as of Story 6.9–6.11: harness baseline + deploy-key write path + isochrone + single tool-calling orchestrator — **ADR-017**; Nanobot (ADR-008/013) confirmed unneeded, not deferred.
 
 ---
 
@@ -477,6 +477,8 @@ CREATE TABLE llm_cost_log (
 ### ADR-017: "Ask Bernard" — One Voice, Two Skillsets, Deploy-Key Write Path
 
 > **Added 2026-06-16** (sprint-change-proposal-2026-06-16.md, mom_handoff_2026-06-16.md). Supersedes ADR-008/013 for Epic 6 Stories 6.0–6.3; ADR-013 (Nanobot) deferred to Story 6.4.
+>
+> **Core seam and Models sub-sections below superseded 2026-07-02** (`mom_handoff_2026-07-02.md`, party-mode roundtable). Nanobot never activated — confirmed unneeded (Story 6.9: native `harness/` tool-calling agent, Gemma 4, is sufficient; no orchestration framework required). The `query | nl_discovery | unknown` three-way skill split below became, in practice, **two independently-built answer systems** (`nl_to_sparql.py` on hardcoded Sonnet vs. `agent.py`'s tool-calling loop on Gemma) that silently disagreed in production. Corrected model: **`agent.py`'s tool-calling loop is the single orchestrator** for `query`/`nl_discovery`/`unknown` — `write` alone keeps a separate dedicated skill path. NL→SPARQL generation becomes one callable tool (`query_sparql`) in the agent's catalog, not a parallel dispatch target. Sonnet is a **Tier-2 escalation inside the loop** (validation failure / empty result / detected complexity), not the default model for an entire intent class. A Tier-0 FAQ/semantic-cache check runs before the loop. See Stories 6.9, 6.10, 6.11.
 
 **Decision:** Epic 6 ships **one channel-agnostic bot with one Bernard voice and an internal intent router**, built by extending the dormant `harness/` baseline — **not** Nanobot, and **not** two separate bots.
 
@@ -485,7 +487,7 @@ CREATE TABLE llm_cost_log (
 - **Platform is transport, not product.** Matrix/Discord/Telegram/Mattermost are adapters behind a normalised `Message`; the skill chain never knows the transport.
 - **harness/ already models the LLM call** (`harness/llm_client.py`, LiteLLMProvider over OpenRouter). 6.0–6.2 are slot-filling + formatting + git plumbing — no orchestration framework needed yet. Re-evaluate Nanobot only when free-form NL→SPARQL lands (6.4).
 
-**Core seam:**
+**Core seam (as-shipped 2026-06-16 — see supersession note above for current routing):**
 ```
 Message(text, user_id, room_id, platform, raw)
 ChannelAdapter: async receive() → Message ; async send(response, context) → None
@@ -493,7 +495,17 @@ intent classifier (Gemma 4 12B via OpenRouter, ~200-token context) → write | q
 skill router → response formatter (Bernard voice, platform-aware markdown) → adapter.send()
 ```
 
-**Models:** Gemma 4 12B (OpenRouter) for classification + response formatting (slot-filling, not reasoning; Haiku acceptable fallback). **Sonnet (`temperature=0.0`) only** for NL→SPARQL query generation in 6.4. Do not use a heavier model for routing/formatting.
+**Core seam (current, post-6.11):**
+```
+Message → intent classifier → write | (query|nl_discovery|unknown → agent.run())
+agent.run(): Tier 0 FAQ-cache check (hit → matched entry injected as RAG context, NOT a bypass)
+             → Tier 1 Gemma tool-calling loop
+             (tools: read_space, query_map, query_sparql, log_gap, propose_write)
+             → Tier 2 Sonnet retry only on validation failure/empty/complexity
+→ response formatter (Bernard voice, platform-aware markdown) → adapter.send()
+```
+
+**Models:** Gemma 4 12B (OpenRouter) for classification, tool-calling, and response formatting (slot-filling, not reasoning; Haiku acceptable fallback). **Sonnet is a Tier-2 escalation inside the agent loop only** — retried with the same tools when Gemma's tool call fails validation, returns empty, or a complexity heuristic trips. Not a dedicated model for an intent class, not a blanket upgrade.
 
 **Write path (data sovereignty — never touches Oxigraph):**
 ```
@@ -1020,7 +1032,7 @@ networks:
 | FR24–27b Endpoint health / ingestion | `infra/link_handler/pipeline.py` (fetch+gate) + `scripts/spaceapi_extract/` (transform) + `snapshot_store.py` (raw + `observed_at`) |
 | FR28–33b Operator dashboard | `web/admin/index.html` + `/api/*` status endpoints in `infra/link_handler/main.py` |
 | FR34–36 SPARQL federated query | Oxigraph service + nginx routing |
-| FR37–42, FR45–49 "Ask Bernard" bot | 🟡 Epic 6 — `harness/` baseline + `infra/bot/` (adapters, intent router, `git_ops.py`, `isochrone.py`); deploy-key endpoint in `infra/link_handler/`; `mak-agent-bot` compose service. **ADR-017** (Nanobot ADR-013 deferred to 6.4) |
+| FR37–42, FR45–49 "Ask Bernard" bot | 🟢 Epic 6 — `harness/` (agent.py/agent_tools.py/router.py, adapters, `git_ops.py`, `isochrone.py`); deploy-key endpoint in `infra/link_handler/`; `mak-agent-bot` compose service. **ADR-017** — Nanobot confirmed unneeded (6.9), routing collapsed onto one tool-calling orchestrator (6.9–6.11) |
 | FR43–44 Auth | nginx (shared-password basic auth header) |
 
 ## External Schema References
@@ -1129,11 +1141,15 @@ web/app.js
   → health toggle overlays aging/zombie/dead — no auth, no admin access
   → space card: GET /api/space/{id}/raw → SQLite raw payload (Zone-3 trust receipt)
 
-"Ask Bernard" bot  🟡 Epic 6 (dormant — harness/ baseline + infra/bot/; ADR-017)
+"Ask Bernard" bot  🟢 Epic 6 (live — harness/ agent.py/agent_tools.py/router.py; ADR-017 supersession note)
   ↓
 channel adapter → Message → intent classifier (write|query|nl_discovery|unknown)
-  ├── write       → permission check → git_ops.patch_json → git commit (SSH deploy key) → heartbeat re-ingests
-  ├── query       → SPARQL template → Oxigraph (READ-ONLY) → Bernard-voice answer
-  │                 (isochrone: ORS polygon → shapely point-in-polygon filter)
-  └── nl_discovery → nl_to_sparql (Sonnet) → IoP guardrail → run_select → Bernard-voice answer
+  ├── write                       → permission check → git_ops.patch_json → git commit (SSH deploy key) → heartbeat re-ingests
+  └── query|nl_discovery|unknown  → agent.run() tool-calling loop (Gemma 4, single orchestrator, post-6.11)
+        Tier 0: FAQ/semantic cache hit → matched entry injected as RAG context, model call still runs
+        Tier 1: Gemma picks a tool — query_map (templates), query_sparql (IoP-guarded NL→SPARQL,
+                folded from nl_to_sparql.py), read_space, log_gap, propose_write
+                (isochrone: ORS polygon → shapely point-in-polygon filter, inside query_map)
+        Tier 2: Sonnet retry, same tools, only on validation failure/empty/complexity heuristic
+  → Bernard-voice answer
 ```

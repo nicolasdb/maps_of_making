@@ -290,10 +290,10 @@ Phase 1 (map SPA, deployed at mapofmaking.debarquin.eu) is shipped. The epic/sto
 | FR35b | Epic 6 | Lenient validation: non-compliant data → warning + log |
 | FR36 | Epic 1 | Public SPARQL endpoint (read-only, nginx-gated) |
 | FR37 | Epic 6.0 | "Ask Bernard" — one channel-agnostic bot + intent router (write\|query\|nl_discovery\|unknown) |
-| FR38 | Epic 6.4 | NL → SPARQL via OpenRouter (Sonnet) + IoP ontology context |
+| FR38 | Epic 6.4→6.11 | NL → SPARQL via OpenRouter, IoP ontology context. **Mechanism unchanged, dispatch superseded 2026-07-02: now a tool (`query_sparql`) inside `agent.py`'s loop, Sonnet is Tier-2 escalation not default model — see Epic 6 supersession note.** |
 | FR39 | Epic 6.4 | Bot returns results with source links + SPARQL transparency |
 | FR40 | Epic 6.5 | Bot graceful failure → clarification offer (Bernard voice rules) |
-| FR41 | Epic 6.4 | Failed queries logged as ontology gap triples |
+| FR41 | Epic 6.4→6.11 | Failed queries logged as gap signals. **Store superseded 2026-07-02: RDF `<urn:mak:gaps>` graph retired into the existing `capability_gaps` SQLite table (Story 6.9), single mechanism.** |
 | FR42 | Epic 6.6 | Matrix-first write; read/discovery on Discord/Telegram/Mattermost |
 | FR43 | Epic 4 | Admin subdomain shared-password auth (PoC-grade) |
 | FR44 | Epic 1 | Public map + coordinator registration: no auth |
@@ -1680,17 +1680,21 @@ So that the demo map carries only UI that earns its cognitive load — nothing i
 
 *(Parallel; non-blocker for demo. Restructured 2026-06-16 — sprint-change-proposal-2026-06-16.md, mom_handoff_2026-06-16.md. Supersedes the old read-only NL-bot stories 6.1–6.6.)*
 
+> **Superseded 2026-07-02** (`mom_handoff_2026-07-02.md`, party-mode roundtable): live testing found the diagram/model split below (a separate `nl_discovery` skill running raw NL→SPARQL on Sonnet, parallel to `query`'s templated path) had drifted into **two independently-built answer systems disagreeing in prod** — Story 6.9 built a tool-calling agent (`harness/agent.py`, Gemma-first) without retiring the original `nl_to_sparql.py` path this section describes. The handoff **replaces** the routing model below: **Bernard's tool-calling loop (`agent.py`) is the one orchestrator** for `query`/`nl_discovery`/`unknown` — it routes to tools (including a `query_sparql` tool wrapping this section's NL→SPARQL generation), checks a Tier-0 FAQ/semantic cache first, and escalates to Sonnet only as a Tier-2 fallback on validation failure/complexity — never as the default model for a whole intent class. Only `write` keeps its own dedicated skill path (Story 6.2, unchanged). See **Story 6.9** (tool-calling agent, done), **Story 6.10** (fuzzy/query folded into the agent, done), **Story 6.11** (collapses `nl_discovery` into the same agent + retires this section's standalone `nl_to_sparql` dispatch — in progress) for what's actually live. Story 6.0–6.6 below are retained as the historical design trail for the write skillset and channel-adapter work, which this supersession does **not** touch — only the discovery-side diagram/model claims are stale.
+
 **One bot. One voice. Internal routing.** A coordinator typing "update our Tuesday hours to 10–18" and a maker typing "find laser cutters near Hamburg" both reach the same Bernard — a different skill fires, the same voice responds. The platform is transport, not product: Matrix/Discord/Telegram/Mattermost are adapters behind a normalised `Message`. An intent classifier routes to `write | query | nl_discovery | unknown`.
 
 ```
 channel message → platform adapter → intent classifier → skill router
-   ├── write skill   → permission check → JSON patch → git commit via SSH deploy key
-   ├── query skill   → SPARQL template → Oxigraph (read-only) → formatted answer
-   └── nl_discovery  → NL→SPARQL → IoP ontology guardrail → Oxigraph → answer
+   ├── write skill                → permission check → JSON patch → git commit via SSH deploy key
+   └── query | nl_discovery | unknown  →  agent.run() tool-calling loop (superseded diagram — see box above)
+        ├── Tier 0: FAQ/semantic cache hit → matched entry injected as RAG context, model call still runs
+        ├── Tier 1: Gemma 4 (default) picks/calls a tool (query_map, query_sparql, read_space, log_gap)
+        └── Tier 2: Sonnet escalation, same tools, only on validation failure/empty/complexity heuristic
 → response formatter (Bernard voice, platform-aware) → platform adapter
 ```
 
-**Framework:** extend `harness/` (🟡 dormant, Epic 6 baseline). **No Nanobot for 6.0–6.2** — deferred, re-evaluate at 6.4. **LLM:** Gemma 4 12B via OpenRouter (LiteLLMProvider, `harness/llm_client.py` pattern) for slot-filling + formatting; Sonnet only for NL→SPARQL generation (6.4). **Oxigraph is read-only from the bot** — the write path is always JSON patch → git commit → heartbeat re-ingest; the bot never writes triples (NFR-S7).
+**Framework:** extend `harness/` (🟢 live, Epic 6 baseline — `agent.py`/`agent_tools.py`/`router.py`). **No Nanobot** — deferred indefinitely, native harness confirmed sufficient (Story 6.9 spike outcome). **LLM:** Gemma 4 12B via OpenRouter (LiteLLMProvider, `harness/llm_client.py` pattern) is the default for classification, tool-calling, and formatting; Sonnet is a **Tier-2 escalation inside the agent loop only** (Story 6.11), not a dedicated model for the discovery skill. **Oxigraph is read-only from the bot** — the write path is always JSON patch → git commit → heartbeat re-ingest; the bot never writes triples (NFR-S7).
 
 **Data sovereignty:** coordinators own their endpoint JSON. The bot edits it on their behalf via an SSH deploy key scoped to one repo, one file. MOM generates the key pair, stores the private key encrypted (Fernet), the coordinator pastes the public key into their repo's Deploy Keys (GitLab/GitHub/Codeberg/Gitea — identical flow, Story 9.8 surface), and revokes by removing it. No deploy key registered ⇒ Bernard's degraded path; read/query always works.
 
@@ -1793,6 +1797,8 @@ So that discovery isn't limited to the templated command vocabulary.
 
 **Depends on:** 6.3 (template queries working), IoP ontology in Oxigraph (Story 1.4). This is the original Epic 6 NL→SPARQL work, now arriving on proven infrastructure.
 
+> **Superseded 2026-07-02 — see box at top of Epic 6.** This story shipped `nl_to_sparql.py` as a *standalone dispatch path*, routed to directly by the classifier's `nl_discovery` result, always on Sonnet. Story 6.11 folds this capability into `agent.py`'s tool catalog as `query_sparql` and removes the standalone dispatch + the hardcoded Sonnet model — Sonnet becomes an agent-loop Tier-2 escalation, not this skill's default model. The ACs below describe the *mechanism* (ontology-grounded CONSTRUCT context, SPARQL validation gate, `mom:OntologyGap` logging) which Story 6.11 largely reuses; they no longer describe the *dispatch path*, which is gone.
+
 **Acceptance Criteria:**
 
 **Given** the IoP ontology is loaded and the classifier (6.0) routes a message to `nl_discovery` because it matches no template pattern
@@ -1846,6 +1852,20 @@ So that the map is usable where our community already lives (Matrix already ship
 **And** each adapter is tested with at least one real query in a live channel
 
 **Done gate (operator confirmation):** the same discovery question answered correctly on Discord and Telegram; a write command on those channels is gracefully declined as Matrix-only.
+
+---
+
+### Story 6.9: Bernard Tool-Calling Agent (spike) — done
+
+Live-verified pivot away from Nanobot/raw-SPARQL-generation-as-dispatch: `harness/agent.py` + `harness/agent_tools.py` implement a tool-calling loop (`read_space`, `query_map`, `log_gap`, `propose_write`) on Gemma 4, native SDK confirmed sufficient. Story file: `6-9-bernard-tool-calling-agent.md`. Full ACs/detail there, not duplicated here — this entry exists so Epic 6's story list isn't missing the pivot that supersedes Story 6.4's dispatch model above.
+
+### Story 6.10: Fuzzy NL Question Routing — done, round-2 live fixes applied
+
+Routed `unknown`-classified messages (and, discovered mid-story, the dead `query_commands.dispatch()` stub) through `agent.run()`. Live Matrix testing after deploy surfaced and fixed five real production bugs (dead query stub, LLM claiming untaken actions, false `@bernard` mention-trigger, SpaceAPI locality backfill gap) — see story file `6-10-fuzzy-nl-question-routing.md` Dev Agent Record for the full account. That same live testing is what surfaced the `nl_discovery`/`nl_to_sparql.py` divergence Story 6.11 now resolves.
+
+### Story 6.11: Collapse NL Answer Paths — draft
+
+Retires `nl_to_sparql.py` as a standalone dispatch path; folds its SPARQL-generation capability into `agent.py`'s tool catalog; removes the hardcoded Sonnet model; unifies gap-logging (retires the `<urn:mak:gaps>` RDF-graph writer into the existing `capability_gaps` SQLite table). This is the story that makes the diagram/model correction at the top of this epic section actually true in code, not just in docs. Story file: `6-11-collapse-nl-answer-paths.md`.
 
 ---
 

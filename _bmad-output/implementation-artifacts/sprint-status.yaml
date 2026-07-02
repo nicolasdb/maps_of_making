@@ -195,6 +195,7 @@ development_status:
   6-8-e2e-encrypted-rooms-spike: ready-for-dev
   6-9-bernard-tool-calling-agent-spike: done  # 2026-07-02: all 10 tasks done incl. live VPS verification (6 real issues found+fixed: model swap gemma3→gemma4, rate limit, router confirm-bypass bug, tool-error honesty, emoji variation-selector, thread fragmentation); decision record CONFIRMED — native SDK sufficient; code review found+fixed 2 patch issues (pending-write bypass firing on non-reaction msgs, propose_write clobbering in-flight pending)
   6-10-fuzzy-nl-question-routing: review  # 2026-07-02: routing/prompt/analytics implemented + unit tested (105 passed); live VPS verification (AC #8) not yet run — manual step flagged in Completion Notes
+  6-11-collapse-nl-answer-paths: draft  # 2026-07-02: roundtable-converged story — collapses nl_discovery's direct nl_to_sparql.dispatch() path into agent.run(), folds nl_to_sparql into agent_tools catalog as query_sparql tool, Tier-0 FAQ cache stub (1 seeded pair), narrow Tier-2 Sonnet escalation inside agent.py's loop, single gap-log (retires <urn:mak:gaps> RDF writer); resolves tonight's two-disagreeing-NL-systems live incident
   epic-6-retrospective: optional
 
   # Epic 7: 🟢 "Open Now" Presence Layer (parked indefinitely — 2026-05-06)

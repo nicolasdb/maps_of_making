@@ -411,11 +411,12 @@ Multi-network beyond RFF/VOW; Matrix + Discord bot; 🟢 live-now tier via webho
 
 ### Natural Language Bot (Phase 2)
 > **Restructured 2026-06-16** (sprint-change-proposal-2026-06-16.md): one channel-agnostic "Ask Bernard" bot with an internal intent router and two skillsets (write + discovery). The agent framework is the extended `harness/` baseline; Nanobot is deferred to Story 6.4 (see ADR-017). The "Nanobot" mentions elsewhere in this PRD (Exec Summary, Innovation §3, Journey 5) are retained as design-intent trail.
-- **FR37** "Ask Bernard" is a single channel-agnostic bot. A platform adapter normalises Matrix/Discord/Telegram/Mattermost to a `Message`; an intent classifier routes each message to `write | query | nl_discovery | unknown`; one Bernard voice responds across all skillsets
-- **FR38** Nanobot agent translates NL → SPARQL using IoP ontology as prompt context (OpenRouter API via LiteLLMProvider, model-agnostic via config)
+> **Superseded 2026-07-02** (`mom_handoff_2026-07-02.md`): Nanobot never activated — confirmed unnecessary at Story 6.9 (native `harness/` tool-calling agent sufficient). The `query | nl_discovery | unknown` split below routed to two independently-built answer systems that drifted apart in prod; **Bernard's tool-calling loop (`agent.py`) is now the single orchestrator** for all three, calling tools (including NL→SPARQL as one tool among several) and escalating model tier only on detected difficulty (Tier 0 cache injected as RAG context, not a model-call bypass → Tier 1 Gemma → Tier 2 Sonnet fallback). See Stories 6.9/6.10/6.11 in epics.md.
+- **FR37** "Ask Bernard" is a single channel-agnostic bot. A platform adapter normalises Matrix/Discord/Telegram/Mattermost to a `Message`; an intent classifier routes each message to `write | query | nl_discovery | unknown`; one Bernard voice responds across all skillsets. **`query`/`nl_discovery`/`unknown` now converge on one tool-calling agent (Story 6.9–6.11), not three separately-dispatched skills.**
+- **FR38** Bot translates NL → SPARQL using IoP ontology as prompt context (OpenRouter API via LiteLLMProvider, model-agnostic via config). **Not a Nanobot agent — a tool inside `agent.py`'s catalog (Story 6.11); model is Gemma-first with Sonnet as Tier-2 escalation, not a dedicated Sonnet path.**
 - **FR39** Bot returns results with source space links + query transparency (show SPARQL)
 - **FR40** Bot acknowledges gracefully when query can't be answered; offers clarification
-- **FR41** Failed/ambiguous queries logged as ontology gap signals
+- **FR41** Failed/ambiguous queries logged as ontology gap signals. **Single mechanism (SQLite `capability_gaps` table, Story 6.9) — the parallel RDF `<urn:mak:gaps>` graph writer is retired by Story 6.11.**
 - **FR42** Matrix-first for the **write** skillset (room-based power-level permissions); Discord, Telegram, and Mattermost carry read/discovery commands only for the PoC
 
 ### Coordinator Write-Back via Bot (Phase 2)
