@@ -1,6 +1,6 @@
 # Story 6.9: Bernard Tool-Calling Agent Spike
 
-Status: review (all 10 tasks complete, including live VPS verification — see Decision Record + Completion Notes for the full incident log)
+Status: done (all 10 tasks complete, including live VPS verification; code review findings fixed — see Decision Record + Completion Notes + Review Findings)
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -154,6 +154,11 @@ None — no failing test loop beyond the initial `agent.py`/test-mock module-pat
 - **Task 8 (live VPS verification) RAN and PASSED**, after 6 real fixes surfaced during live testing (see incident log above under Decision Record). Full path confirmed end-to-end on the live Matrix room: NL write request → `propose_write` echoes real current/proposed delta → ✅ reaction confirms (matched to the correct message, correct thread) → `git_ops.commit_json` lands a real SHA (`eb19521f`) → verified on GitHub. `harness/config.yaml`'s `bot.model` changed from `google/gemma-3-12b-it` to `google/gemma-4-26b-a4b-it` as part of this (Gemma 3 lacks real tool-calling; Gemma 4 has it) — this is a production config change, not spike-scoped, flagging it explicitly.
 - Task 10 scope check: grepped `bernard_voice.yaml` — zero diff, zero new keys. No temptation to touch it arose; the new system prompt (`bernard_agent_prompt.py`) is a fully separate concern from the copy table it's meant to eventually replace.
 - Router: kept `query`/`nl_discovery` on their existing dispatch paths rather than also routing them through the agent (Task 6's stretch goal) — time-boxing the spike to the write-path goal per the story's own scope guardrail.
+
+### Review Findings
+
+- [x] [Review][Patch] main_matrix.py pending-write bypass fires on any message, not just the ✅ reaction — unrelated chat during a pending confirm gets routed through the full agent loop [harness/main_matrix.py:52]
+- [x] [Review][Patch] agent_tools.propose_write silently overwrites an in-flight unconfirmed PENDING_ACTIONS entry with no check or warning [harness/agent_tools.py:468]
 
 ### File List
 

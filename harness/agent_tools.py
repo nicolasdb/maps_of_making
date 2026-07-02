@@ -109,6 +109,9 @@ async def propose_write(
     if not allowed:
         return {"allowed": False, "reason": reason}
 
+    if (room_id, user_id) in PENDING_ACTIONS:
+        return {"allowed": False, "reason": "pending_action_exists"}
+
     valid, err = commands._validate_value(field_path, new_value)
     if not valid:
         return {"allowed": False, "reason": "invalid_value", "detail": err}

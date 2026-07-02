@@ -49,11 +49,13 @@ async def handle_message(adapter: MatrixAdapter, message) -> None:
     elif message.text.startswith(COMMAND_PREFIX):
         stripped = dataclasses.replace(message, text=message.text[len(COMMAND_PREFIX):].strip())
         bound.info("message.received", text=message.text)
-    elif (message.room_id, message.user_id) in agent_tools.PENDING_ACTIONS:
+    elif message.via_reaction and (message.room_id, message.user_id) in agent_tools.PENDING_ACTIONS:
         # A ✅ reaction (via_reaction=True, synthesized by MatrixAdapter) is
         # never a mention or a !mom command, so it needs this bypass to reach
-        # the router at all. Scoped narrowly: only fires when this exact
-        # (room, user) has a stashed propose_write awaiting confirmation.
+        # the router at all. Scoped narrowly: only fires for the synthesized
+        # reaction message itself — plain chat from a user with a pending
+        # write still requires @mention/!mom like normal (Story 6.9 review
+        # finding: this used to fire on ANY message from that user).
         # thread_id is stamped from the pending action's stored thread_root so
         # the commit-ack lands in the SAME Matrix thread as the confirm-ask,
         # instead of starting a new thread rooted at the reaction's target
