@@ -20,10 +20,15 @@ from bot import git_ops
 log = structlog.get_logger()
 
 CAPABILITY_GAPS_DB_DEFAULT = "/app/tasks/capability_gaps.db"
+FUZZY_QUESTIONS_DB_DEFAULT = "/app/tasks/fuzzy_questions.db"
 
 
 def _capability_gaps_db_path() -> str:
     return os.environ.get("CAPABILITY_GAPS_DB_PATH", CAPABILITY_GAPS_DB_DEFAULT)
+
+
+def _fuzzy_questions_db_path() -> str:
+    return os.environ.get("FUZZY_QUESTIONS_DB_PATH", FUZZY_QUESTIONS_DB_DEFAULT)
 
 
 def _init_capability_gaps_db(path: str) -> None:
@@ -42,6 +47,22 @@ def _init_capability_gaps_db(path: str) -> None:
     con.close()
 
 
+def _init_fuzzy_questions_db(path: str) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(path)
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS fuzzy_questions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            raw_request TEXT NOT NULL,
+            resolved INTEGER NOT NULL,
+            room_id TEXT
+        )
+    """)
+    con.commit()
+    con.close()
+
+
 def _write_capability_gap(raw_request: str, note: str, room_id: str) -> None:
     from datetime import datetime, timezone
 
@@ -51,6 +72,24 @@ def _write_capability_gap(raw_request: str, note: str, room_id: str) -> None:
     con.execute(
         "INSERT INTO capability_gaps (timestamp, raw_request, note, room_id) VALUES (?, ?, ?, ?)",
         (datetime.now(timezone.utc).isoformat(), raw_request, note, room_id),
+    )
+    con.commit()
+    con.close()
+
+
+def log_fuzzy_question(raw_request: str, resolved: bool, room_id: str = "") -> None:
+    """Analytics for every fuzzy (unknown-intent) question routed through the
+    agent — independent of log_gap. A resolved question is never a gap; an
+    unresolved on-topic question is both a gap row (log_gap) AND a
+    resolved=false row here. Off-topic refusals count as resolved=true."""
+    from datetime import datetime, timezone
+
+    path = _fuzzy_questions_db_path()
+    _init_fuzzy_questions_db(path)
+    con = sqlite3.connect(path)
+    con.execute(
+        "INSERT INTO fuzzy_questions (timestamp, raw_request, resolved, room_id) VALUES (?, ?, ?, ?)",
+        (datetime.now(timezone.utc).isoformat(), raw_request, int(resolved), room_id),
     )
     con.commit()
     con.close()

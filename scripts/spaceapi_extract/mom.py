@@ -13,6 +13,8 @@ except ImportError:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "infra" / "link_handler"))
     from pipeline_helpers import _extract_open_now, _extract_last_open_change  # noqa: F401
 
+from .address import parse_locality_from_free_address
+
 # Freshness axis predicates are owned by the heartbeat writers in pipeline.py.
 # extract_mom NEVER returns these — the negative unit test in test_spaceapi_extract.py
 # guards this contract so a future contributor cannot accidentally add them here and
@@ -36,6 +38,9 @@ def extract_mom(payload: dict) -> dict[str, Any]:
     addr = loc.get("address")
     if addr and isinstance(addr, str):
         fields["mom:address"] = addr
+        city, _postcode, _country = parse_locality_from_free_address(addr)
+        if city:
+            fields["schema:addressLocality"] = city
 
     country_code = loc.get("country_code")
     if country_code and isinstance(country_code, str):

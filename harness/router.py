@@ -5,7 +5,6 @@ import agent_tools
 import bernard
 import intent_classifier
 import nl_to_sparql
-import query_commands
 from message import Message
 
 log = structlog.get_logger()
@@ -24,10 +23,15 @@ async def route(message: Message, session_id: str, adapter=None) -> str:
     intent = await intent_classifier.classify(message.text, session_id=session_id)
 
     if intent == "unknown":
-        return bernard.unknown_ack()
+        return await agent.run(message, session_id=session_id, adapter=adapter, fuzzy=True)
 
     if intent == "query":
-        return await query_commands.dispatch(message, session_id=session_id)
+        # query_commands.dispatch() is an unwired stub (always unknown_ack —
+        # never finished post-6.3, discovered live during 6.10 verification).
+        # Route through the same tool-calling agent as `unknown` until a
+        # dedicated query dispatcher lands; not a "fuzzy" question so it's
+        # excluded from fuzzy_questions analytics (fuzzy defaults False).
+        return await agent.run(message, session_id=session_id, adapter=adapter)
 
     if intent == "nl_discovery":
         return await nl_to_sparql.dispatch(message, session_id=session_id)

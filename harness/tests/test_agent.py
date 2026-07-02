@@ -289,6 +289,22 @@ async def test_agent_run_passes_reduced_tools_for_non_coordinator():
     assert "propose_write" not in tool_names
 
 
+@pytest.mark.asyncio
+async def test_fuzzy_question_from_non_coordinator_still_gets_no_write_tool(tmp_path, monkeypatch):
+    """Regression check (Story 6.10 AC #3): routing a fuzzy question through
+    agent.run(fuzzy=True) does not add a new gating path — the existing
+    power_level < 100 gate from Story 6.9 still applies."""
+    monkeypatch.setenv("FUZZY_QUESTIONS_DB_PATH", str(tmp_path / "fuzzy_questions.db"))
+    mock_complete = AsyncMock(return_value=("here's what I know", None, "model", 1))
+    with patch("agent.llm_client.complete_with_tools", new=mock_complete):
+        msg = _make_message("how can you help me?", power_level=0)
+        await agent.run(msg, session_id="s1", fuzzy=True)
+
+    passed_tools = mock_complete.call_args.kwargs["tools"]
+    tool_names = {t["function"]["name"] for t in passed_tools}
+    assert "propose_write" not in tool_names
+
+
 # ---------------------------------------------------------------------------
 # Unfulfillable request calls log_gap with the correct gap_kind
 # ---------------------------------------------------------------------------
@@ -338,3 +354,85 @@ async def test_agent_run_dispatches_log_gap_tool_call(monkeypatch, tmp_path):
     rows = con.execute("SELECT raw_request FROM capability_gaps").fetchall()
     con.close()
     assert len(rows) == 1
+
+
+# ---------------------------------------------------------------------------
+# Off-topic refusal is distinct from an on-topic capability gap (Story 6.10)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_off_topic_refusal_does_not_call_log_gap(tmp_path, monkeypatch):
+    """Given a canned off-topic user message and a mocked LLM response
+    reflecting the in-character refusal (no tool call), log_gap must not be
+    called — distinguishing 'declined to answer' from 'logged as a gap'."""
+    monkeypatch.setenv("FUZZY_QUESTIONS_DB_PATH", str(tmp_path / "fuzzy_questions.db"))
+    with patch("agent.llm_client.complete_with_tools", new=AsyncMock(
+                return_value=("Not my department. Ask someone who cares about the weather.", None, "model", 1))), \
+         patch("agent_tools.log_gap", new=AsyncMock()) as mock_log_gap:
+        msg = _make_message("what's the weather like today?", power_level=0)
+        response = await agent.run(msg, session_id="s1", fuzzy=True)
+
+    mock_log_gap.assert_not_called()
+    assert "weather" in response.lower()
+
+
+# ---------------------------------------------------------------------------
+# Fuzzy-question analytics logging (Story 6.10, AC #9)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_fuzzy_question_resolved_logs_analytics_row(tmp_path, monkeypatch):
+    monkeypatch.setenv("FUZZY_QUESTIONS_DB_PATH", str(tmp_path / "fuzzy_questions.db"))
+    with patch("agent.llm_client.complete_with_tools", new=AsyncMock(
+                return_value=("Here's what I know about that space.", None, "model", 1))):
+        msg = _make_message("how can you help me?", power_level=0)
+        await agent.run(msg, session_id="s1", fuzzy=True)
+
+    import sqlite3
+    con = sqlite3.connect(str(tmp_path / "fuzzy_questions.db"))
+    rows = con.execute("SELECT raw_request, resolved FROM fuzzy_questions").fetchall()
+    con.close()
+    assert rows == [("how can you help me?", 1)]
+
+
+@pytest.mark.asyncio
+async def test_fuzzy_question_unresolved_gap_logs_both_gap_and_unresolved_analytics(tmp_path, monkeypatch):
+    monkeypatch.setenv("CAPABILITY_GAPS_DB_PATH", str(tmp_path / "capability_gaps.db"))
+    monkeypatch.setenv("FUZZY_QUESTIONS_DB_PATH", str(tmp_path / "fuzzy_questions.db"))
+    tool_call = _fake_tool_call("log_gap", {
+        "raw_request": "what's the isochrone from a space that doesn't exist",
+        "note": "no isochrone tool",
+        "gap_kind": "capability",
+    })
+
+    with patch("agent.llm_client.complete_with_tools", new=AsyncMock(side_effect=[
+                ("", [tool_call], "model", 1),
+                ("Can't do that yet — logged it.", None, "model", 1),
+            ])):
+        msg = _make_message("what's the isochrone from a space that doesn't exist", power_level=0)
+        await agent.run(msg, session_id="s1", fuzzy=True)
+
+    import sqlite3
+    gap_con = sqlite3.connect(str(tmp_path / "capability_gaps.db"))
+    gap_rows = gap_con.execute("SELECT raw_request FROM capability_gaps").fetchall()
+    gap_con.close()
+    assert len(gap_rows) == 1
+
+    fuzzy_con = sqlite3.connect(str(tmp_path / "fuzzy_questions.db"))
+    fuzzy_rows = fuzzy_con.execute("SELECT raw_request, resolved FROM fuzzy_questions").fetchall()
+    fuzzy_con.close()
+    assert fuzzy_rows == [("what's the isochrone from a space that doesn't exist", 0)]
+
+
+@pytest.mark.asyncio
+async def test_write_intent_agent_run_does_not_log_fuzzy_analytics(tmp_path, monkeypatch):
+    """fuzzy=False (the write-intent call shape, unchanged) must not touch
+    the fuzzy_questions table at all."""
+    db_path = str(tmp_path / "fuzzy_questions.db")
+    monkeypatch.setenv("FUZZY_QUESTIONS_DB_PATH", db_path)
+    with patch("agent.llm_client.complete_with_tools", new=AsyncMock(
+                return_value=("ok", None, "model", 1))):
+        msg = _make_message("set state.open to true", power_level=100)
+        await agent.run(msg, session_id="s1")
+
+    assert not Path(db_path).exists()

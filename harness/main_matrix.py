@@ -29,9 +29,7 @@ def _log_task_exception(task: asyncio.Task) -> None:
         log.error("handle_message.failed", exc_info=exc)
 
 
-def _is_bernard_mention(text: str) -> bool:
-    """Match @bernard or display-name mention at start of message."""
-    return bool(re.match(r"^@?bernard[\s,:]+", text, re.IGNORECASE))
+_MENTION_PREFIX_RE = re.compile(r"^@?bernard[\s,:]*", re.IGNORECASE)
 
 
 async def handle_message(adapter: MatrixAdapter, message) -> None:
@@ -41,9 +39,15 @@ async def handle_message(adapter: MatrixAdapter, message) -> None:
     session_id = str(uuid.uuid4())
     bound = log.bind(session_id=session_id, adapter="matrix", room_id=message.room_id)
 
-    if _is_bernard_mention(message.text):
-        # Strip @bernard prefix and route as natural-language NL discovery
-        nl_text = re.sub(r"^@?bernard[\s,:]+", "", message.text, flags=re.IGNORECASE).strip()
+    if message.is_mention:
+        # is_mention is decided by the adapter from the event's real
+        # m.mentions data (or a literal "@bernard" in the raw body) — NOT by
+        # whether the stripped text merely starts with the word "bernard".
+        # A sentence like "Bernard s'en fiche..." used to false-trigger here
+        # because the old regex ran on message.text with an optional "@".
+        # Any leading "@bernard"/"bernard:" address prefix is still stripped
+        # from the text so it doesn't leak into the NL question itself.
+        nl_text = _MENTION_PREFIX_RE.sub("", message.text, count=1).strip()
         stripped = dataclasses.replace(message, text=nl_text)
         bound.info("message.received", text=nl_text, via="bernard_mention")
     elif message.text.startswith(COMMAND_PREFIX):

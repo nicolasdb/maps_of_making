@@ -461,3 +461,56 @@ def test_backfill_stamps_updated_at_once_on_unchanged_content(
         assert second_ts == first_ts, "backfill must not overwrite on subsequent unchanged run"
     finally:
         stop()
+
+
+# ── Backfill: one-time schema:addressLocality/knowsAbout stamp (Story 6.10 follow-up) ──
+# project_spaceapi_missing_locality_knowsabout: seed_spaceapi.py seeds only a
+# minimal envelope; write_payload_fields() backfills address/specialty but was
+# only ever called on content_changed=True — an endpoint whose payload never
+# drifts never got these fields at all.
+
+def _read_address_locality_from_graph() -> str | None:
+    r = httpx.post(
+        f"{OXIGRAPH_URL}/query",
+        content=f"""PREFIX schema: <https://schema.org/>
+SELECT ?c WHERE {{ GRAPH <{SPACE_URI}> {{ <{SPACE_URI}> schema:addressLocality ?c }} }}""",
+        headers={"Content-Type": "application/sparql-query",
+                 "Accept": "application/sparql-results+json"},
+        timeout=5.0,
+    )
+    r.raise_for_status()
+    bindings = r.json().get("results", {}).get("bindings", [])
+    return bindings[0]["c"]["value"] if bindings else None
+
+
+@pytest.mark.live_integration
+def test_backfill_writes_address_locality_once_on_unchanged_content(
+    oxigraph_required, clean_space, canary_endpoint
+):
+    """Given a claimed space with no schema:addressLocality and unchanged
+    content, when the pipeline runs, then addressLocality is backfilled from
+    the payload's free-text location.address on the first run — even though
+    content_changed stays False for the rest of the test."""
+    import asyncio
+    from pipeline import run_space_pipeline
+
+    start, stop = canary_endpoint
+    url = start(mode="open")  # baseline payload: location.address = "Maunsell Fort, North Sea"
+    try:
+        _seed_claimed_no_updated_at(url)
+
+        assert _read_address_locality_from_graph() is None, "precondition: no addressLocality yet"
+
+        asyncio.get_event_loop().run_until_complete(
+            run_space_pipeline(SPACE_ID, url, SPACE_URI, SPACE_URI, OXIGRAPH_URL)
+        )
+        locality = _read_address_locality_from_graph()
+        assert locality == "Maunsell Fort", "backfill must derive addressLocality from location.address"
+
+        # Second run — same content, no diff; must not error or duplicate the triple.
+        asyncio.get_event_loop().run_until_complete(
+            run_space_pipeline(SPACE_ID, url, SPACE_URI, SPACE_URI, OXIGRAPH_URL)
+        )
+        assert _read_address_locality_from_graph() == locality
+    finally:
+        stop()

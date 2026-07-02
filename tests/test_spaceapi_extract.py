@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from spaceapi_extract import extract_core, extract_mom, triples_for, escape_literal
+from spaceapi_extract.address import parse_locality_from_free_address
 
 # Freshness predicates that must NEVER appear in extractor output (AC 8 final bullet)
 _FRESHNESS = frozenset({"mom:observedAt", "mom:updatedAt", "mom:openNow", "mom:lastOpenChange"})
@@ -270,3 +271,47 @@ def test_mother_sands_round_trip_address_and_country():
     assert "sol-3" in triple_str
     assert "UTC+0" in triple_str
     assert "Mother Sands" in triple_str
+
+
+# ── parse_locality_from_free_address (city/tag search fix, project_spaceapi_missing_locality_knowsabout) ──
+
+def test_parse_locality_three_segment_address():
+    city, postcode, country = parse_locality_from_free_address("Forchheimer Str. 2, 91083 Baiersdorf, DE")
+    assert city == "Baiersdorf"
+    assert postcode == "91083"
+    assert country == "DE"
+
+
+def test_parse_locality_nl_glued_postcode():
+    city, postcode, country = parse_locality_from_free_address("Some St 1, 1217EH Hilversum, NL")
+    assert city == "Hilversum"
+    assert postcode == "1217EH"
+    assert country == "NL"
+
+
+def test_parse_locality_two_segment_address():
+    city, postcode, country = parse_locality_from_free_address("9052 Zwijnaarde, Belgium")
+    assert city == "Zwijnaarde"
+    assert postcode == "9052"
+    assert country is None
+
+
+def test_parse_locality_single_segment_no_comma_unparseable():
+    city, postcode, country = parse_locality_from_free_address("Maunsell Fort North Sea")
+    assert (city, postcode, country) == (None, None, None)
+
+
+def test_parse_locality_non_string_input_returns_all_none():
+    assert parse_locality_from_free_address(None) == (None, None, None)
+
+
+# ── extract_mom: schema:addressLocality derived from free-text address ────────
+
+def test_extract_mom_derives_address_locality_from_baiersdorf_style_address():
+    payload = {"location": {"lat": 49.65, "lon": 11.03, "address": "Forchheimer Str. 2, 91083 Baiersdorf, DE"}}
+    assert extract_mom(payload)["schema:addressLocality"] == "Baiersdorf"
+
+
+def test_extract_mom_no_address_locality_when_address_absent():
+    payload = {"location": {"lat": 49.65, "lon": 11.03}}
+    assert "schema:addressLocality" not in extract_mom(payload)

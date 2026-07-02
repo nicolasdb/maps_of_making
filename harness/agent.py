@@ -26,7 +26,7 @@ log = structlog.get_logger()
 MAX_TOOL_ITERATIONS = 4
 
 
-async def run(message: Message, session_id: str = "", adapter=None) -> str:
+async def run(message: Message, session_id: str = "", adapter=None, fuzzy: bool = False) -> str:
     bound = log.bind(session_id=session_id, room_id=message.room_id, user_id=message.user_id)
 
     # Confirmation is reaction-only (Story 6.9 follow-up) — a single ✅ is the
@@ -38,6 +38,9 @@ async def run(message: Message, session_id: str = "", adapter=None) -> str:
 
     tools = agent_tools.build_tools(message.power_level)
     messages = [{"role": "user", "content": message.text}]
+    # Tracks whether this run logged an on-topic-unfulfillable gap — used only
+    # for fuzzy-question analytics (AC #9); irrelevant to the write path.
+    capability_gap_logged = False
 
     for _ in range(MAX_TOOL_ITERATIONS):
         try:
@@ -50,9 +53,13 @@ async def run(message: Message, session_id: str = "", adapter=None) -> str:
             )
         except (llm_client.LLMRequestError, ValueError) as exc:
             bound.warning("agent.llm_failed", error=str(exc))
+            if fuzzy:
+                agent_tools.log_fuzzy_question(message.text, resolved=False, room_id=message.room_id)
             return bernard.unknown_ack()
 
         if not tool_calls:
+            if fuzzy:
+                agent_tools.log_fuzzy_question(message.text, resolved=not capability_gap_logged, room_id=message.room_id)
             return text or bernard.unknown_ack()
 
         messages.append({
@@ -70,6 +77,13 @@ async def run(message: Message, session_id: str = "", adapter=None) -> str:
 
         for tc in tool_calls:
             result = await _dispatch_tool(tc, message, bound)
+            if tc.function.name == "log_gap":
+                try:
+                    tc_args = json.loads(tc.function.arguments or "{}")
+                except json.JSONDecodeError:
+                    tc_args = {}
+                if tc_args.get("gap_kind") == "capability":
+                    capability_gap_logged = True
             messages.append({
                 "role": "tool",
                 "tool_call_id": tc.id,
@@ -77,6 +91,8 @@ async def run(message: Message, session_id: str = "", adapter=None) -> str:
             })
 
     bound.warning("agent.max_tool_iterations_exceeded")
+    if fuzzy:
+        agent_tools.log_fuzzy_question(message.text, resolved=False, room_id=message.room_id)
     return bernard.unknown_ack()
 
 

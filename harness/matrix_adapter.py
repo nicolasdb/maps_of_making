@@ -57,10 +57,21 @@ class MatrixAdapter:
         body = self._FALLBACK_RE.sub("", event.body).strip()
 
         # Extract thread root event_id if this message is inside a thread
-        relates = (event.source or {}).get("content", {}).get("m.relates_to", {})
+        content = (event.source or {}).get("content", {})
+        relates = content.get("m.relates_to", {})
         thread_id = ""
         if relates.get("rel_type") == "m.thread":
             thread_id = relates.get("event_id", "")
+
+        # Intentional-mentions (MSC3952 / Matrix 1.7): a client-tagged
+        # @mention names the bot's own mxid here regardless of display-name
+        # casing or sentence position. Fall back to a literal "@bernard" in
+        # the raw body for clients that don't send m.mentions — a bare
+        # "bernard" at the start of a sentence (no @) is NOT a mention.
+        mentioned_ids = content.get("m.mentions", {}).get("user_ids", [])
+        is_mention = self.client.user_id in mentioned_ids or bool(
+            re.search(r"@bernard\b", event.body, re.IGNORECASE)
+        )
 
         message = Message(
             text=body,
@@ -71,6 +82,7 @@ class MatrixAdapter:
             power_level=room.power_levels.get_user_level(event.sender),
             event_id=event.event_id,
             thread_id=thread_id,
+            is_mention=is_mention,
         )
         await self._queue.put(message)
 

@@ -41,6 +41,7 @@ import httpx
 
 sys.path.insert(0, str(Path(__file__).parent))
 from spaceapi_extract import escape_literal  # noqa: E402
+from spaceapi_extract.address import parse_locality_from_free_address  # noqa: E402
 
 OXIGRAPH_ENDPOINT = os.getenv("OXIGRAPH_ENDPOINT", "http://localhost:7878")
 UPDATE_URL = f"{OXIGRAPH_ENDPOINT}/update"
@@ -122,41 +123,15 @@ def extract_record(record: dict) -> dict | None:
     if not country:
         country = _get(record, "location.country_code")
     # SpaceAPI location.address is a free-form string like "Street, PostCode City, CountryCode".
-    # Extract city and country from the last two comma-delimited segments when structured addr is missing.
+    # Extract city/postcode/country from it when the structured addr fields are missing
+    # (shared with the live heartbeat's extract_mom() — see spaceapi_extract/address.py).
     if not city:
         loc_addr_str = _get(geo, "address") if isinstance(geo, dict) else None
         if isinstance(loc_addr_str, str):
-            parts = [p.strip() for p in loc_addr_str.split(",")]
-            if len(parts) >= 3:
-                # last segment is country code, second-to-last is "PostCode City"
-                if not country:
-                    country = parts[-1].strip()
-                postcode_city = parts[-2].strip()
-                # split on first space: "9500 Geraardsbergen" → postcode + city
-                pc_parts = postcode_city.split(None, 1)
-                # Match "9500 Geraardsbergen" (BE) or "1217EH Hilversum" (NL) or "3901 TP Veenendaal"
-                _pc_re = re.compile(r"^\d{4}[A-Z]{0,2}$")
-                if len(pc_parts) == 2 and _pc_re.match(pc_parts[0].upper().replace("-", "").replace(" ", "")):
-                    if not postcode:
-                        postcode = pc_parts[0]
-                    city = pc_parts[1]
-                elif len(pc_parts) == 1 and _pc_re.match(postcode_city.upper().replace(" ", "")[:6]):
-                    # "1217EH" with no space — postcode only, no city parseable
-                    if not postcode:
-                        postcode = postcode_city
-                elif not city:
-                    city = postcode_city
-            elif len(parts) == 2 and not city:
-                # e.g. "9052 Zwijnaarde, Belgium" — try to split postcode from city in parts[0]
-                candidate = parts[0].strip()
-                pc_parts2 = candidate.split(None, 1)
-                _pc_re2 = re.compile(r"^\d{4}[A-Z]{0,2}$")
-                if len(pc_parts2) == 2 and _pc_re2.match(pc_parts2[0].upper()):
-                    if not postcode:
-                        postcode = pc_parts2[0]
-                    city = pc_parts2[1]
-                else:
-                    city = candidate
+            parsed_city, parsed_postcode, parsed_country = parse_locality_from_free_address(loc_addr_str)
+            city = city or parsed_city
+            postcode = postcode or parsed_postcode
+            country = country or parsed_country
 
     url = _get(record, "schema:url", "url", "website")
     profile_url = _get(record, "mom:profileUrl", "profileUrl")

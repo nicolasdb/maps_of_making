@@ -38,6 +38,7 @@ from pipeline_helpers import detect_diff, _extract_open_now, _extract_last_open_
 logger = logging.getLogger(__name__)
 
 MOM_NS = "https://nicolasdb.github.io/mapsofmaking_ontology/ns#"
+SCHEMA_NS = "https://schema.org/"
 XSD_DT = "http://www.w3.org/2001/XMLSchema#dateTime"
 
 
@@ -246,6 +247,31 @@ ASK {{ GRAPH <{graph_uri}> {{ <{subject}> mom:updatedAt ?t }} }}"""
     return not bool(resp.json().get("boolean", False))
 
 
+async def _payload_fields_absent(
+    oxigraph_endpoint: str,
+    graph_uri: str,
+    subject: str,
+) -> bool:
+    """True when schema:addressLocality is not yet present for this subject.
+    Used for a one-time payload-fields backfill (mirrors _updated_at_absent):
+    seed_spaceapi.py intentionally seeds only a minimal envelope and expects
+    write_payload_fields() to backfill address/specialty on the first
+    confirmed fetch — but that only fires on content_changed=True, so an
+    endpoint whose payload never drifts would otherwise never get these
+    fields written at all, not just "until the next change" (see
+    ops_payload_field_backfill)."""
+    sparql = f"""PREFIX schema: <{SCHEMA_NS}>
+ASK {{ GRAPH <{graph_uri}> {{ <{subject}> schema:addressLocality ?c }} }}"""
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.post(
+            f"{oxigraph_endpoint}/query",
+            content=sparql,
+            headers={"Content-Type": "application/sparql-query", "Accept": "application/sparql-results+json"},
+        )
+        resp.raise_for_status()
+    return not bool(resp.json().get("boolean", False))
+
+
 async def _space_is_claimed(
     oxigraph_endpoint: str,
     graph_uri: str,
@@ -419,6 +445,19 @@ async def run_space_pipeline(
                     logger.info("[axis-b] %s mom:updatedAt backfilled from observed_at=%s", uid, backfill_ts)
         except Exception as e:
             logger.warning("[axis-b] %s backfill check/write failed (non-fatal): %s", uid, e)
+
+        # One-time backfill: seed_spaceapi.py deliberately seeds only a minimal
+        # envelope and relies on write_payload_fields() to fill in address/
+        # specialty on the first confirmed fetch — but that call is normally
+        # gated on content_changed=True. An endpoint whose payload never
+        # drifts would otherwise never get these fields at all (see
+        # ops_payload_field_backfill memory: same gap, different field set).
+        try:
+            if await _payload_fields_absent(oxigraph_endpoint, graph_uri, subject):
+                await write_payload_fields(uid, snap["payload"], graph_uri, subject, oxigraph_endpoint)
+                logger.info("[payload-fields] %s backfilled (was absent, content unchanged)", uid)
+        except Exception as e:
+            logger.warning("[payload-fields] %s backfill check/write failed (non-fatal): %s", uid, e)
 
     state_obj = snap["payload"].get("state") if isinstance(snap.get("payload"), dict) else None
     open_now = _extract_open_now(state_obj)

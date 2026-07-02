@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-01
-last_updated: "2026-07-01 (6-10 created: fuzzy NL question routing, successor to 6-9)"
+last_updated: "2026-07-02 (6-10 dev complete, moved to review; live VPS verification AC#8 still pending)"
 project: maps_of_making
 project_key: NOKEY
 tracking_system: file-system
@@ -194,7 +194,7 @@ development_status:
   6-7-dev-env-separation-vps-test-stance: ready-for-dev
   6-8-e2e-encrypted-rooms-spike: ready-for-dev
   6-9-bernard-tool-calling-agent-spike: done  # 2026-07-02: all 10 tasks done incl. live VPS verification (6 real issues found+fixed: model swap gemma3→gemma4, rate limit, router confirm-bypass bug, tool-error honesty, emoji variation-selector, thread fragmentation); decision record CONFIRMED — native SDK sufficient; code review found+fixed 2 patch issues (pending-write bypass firing on non-reaction msgs, propose_write clobbering in-flight pending)
-  6-10-fuzzy-nl-question-routing: ready-for-dev  # 2026-07-01: successor to 6.9, narrow scope by operator decision — route unknown intent through agent.run() only (query/nl_discovery untouched); adds off-topic guardrail + capability-gap logging discipline + new fuzzy_questions analytics table (resolved/unresolved) to seed future wide-scope + multi-turn-memory story
+  6-10-fuzzy-nl-question-routing: review  # 2026-07-02: routing/prompt/analytics implemented + unit tested (105 passed); live VPS verification (AC #8) not yet run — manual step flagged in Completion Notes
   epic-6-retrospective: optional
 
   # Epic 7: 🟢 "Open Now" Presence Layer (parked indefinitely — 2026-05-06)
