@@ -481,3 +481,73 @@ async def test_update_command_success_returns_committed_ack(monkeypatch):
     ctx = _make_context(power_level=100)
     result = await commands.try_handle('update contact.irc "#room:libera.chat"', "@u:x", "!room:x", "sid", context=ctx)
     assert "abc1234" in result
+
+
+# ---------------------------------------------------------------------------
+# !mom travel fallback speed (live bug, 2026-07-02): "20min by bike" produced
+# a 26km search radius — the ORS-timeout bounding-box fallback used a single
+# hardcoded 80 km/h for every travel mode, i.e. car speed on a bike request.
+# ---------------------------------------------------------------------------
+
+import isochrone
+import query_commands
+
+
+@pytest.mark.asyncio
+async def test_travel_fallback_uses_bike_speed_not_car_speed(monkeypatch):
+    monkeypatch.setattr(isochrone, "travel_search", AsyncMock(
+        return_value={"confirmed": [], "seeded_count": 0, "fallback": True, "coords": (50.85, 4.35)}))
+    nearby_mock = AsyncMock(return_value="nothing")
+    monkeypatch.setattr(query_commands, "nearby_from_coords", nearby_mock)
+
+    ctx = _make_context(power_level=0)
+    await commands.try_handle("travel openfab 20min by bike", "@u:x", "!room:x", "sid", context=ctx)
+
+    radius_km = nearby_mock.call_args[0][1]
+    assert radius_km == pytest.approx((20 / 60) * 15.0)  # bike speed, not 80 km/h
+
+
+@pytest.mark.asyncio
+async def test_travel_fallback_uses_car_speed_by_default(monkeypatch):
+    monkeypatch.setattr(isochrone, "travel_search", AsyncMock(
+        return_value={"confirmed": [], "seeded_count": 0, "fallback": True, "coords": (50.85, 4.35)}))
+    nearby_mock = AsyncMock(return_value="nothing")
+    monkeypatch.setattr(query_commands, "nearby_from_coords", nearby_mock)
+
+    ctx = _make_context(power_level=0)
+    await commands.try_handle("travel openfab 1h", "@u:x", "!room:x", "sid", context=ctx)
+
+    radius_km = nearby_mock.call_args[0][1]
+    assert radius_km == pytest.approx(40.0)
+
+
+@pytest.mark.asyncio
+async def test_travel_ambiguous_origin_reports_candidates_not_a_guess(monkeypatch):
+    monkeypatch.setattr(isochrone, "travel_search", AsyncMock(
+        side_effect=isochrone.OriginAmbiguousError("hub", ["Hub Alpha", "Hub Beta"])))
+
+    ctx = _make_context(power_level=0)
+    result = await commands.try_handle("travel hub 1h", "@u:x", "!room:x", "sid", context=ctx)
+
+    assert "Hub Alpha" in result
+    assert "Hub Beta" in result
+
+
+# ---------------------------------------------------------------------------
+# !mom travel multi-word origin (live bug, 2026-07-02): "openfab ozu 20min by
+# bike" split(maxsplit=2) chopped the origin at the first space, sending only
+# "openfab" as origin and "ozu 20min by bike" as the hours arg (fails to
+# parse). travel now peels the trailing duration+mode off the end instead.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_travel_multi_word_origin_is_not_truncated(monkeypatch):
+    travel_mock = AsyncMock(
+        return_value={"confirmed": [], "seeded_count": 0, "fallback": False, "results": []})
+    monkeypatch.setattr(isochrone, "travel_search", travel_mock)
+
+    ctx = _make_context(power_level=0)
+    await commands.try_handle("travel openfab ozu 20min by bike", "@u:x", "!room:x", "sid", context=ctx)
+
+    origin_arg = travel_mock.call_args[0][0]
+    assert origin_arg == "openfab ozu"

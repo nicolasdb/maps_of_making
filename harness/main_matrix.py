@@ -68,6 +68,14 @@ async def handle_message(adapter: MatrixAdapter, message) -> None:
         stripped = dataclasses.replace(message, thread_id=pending.get("thread_root", ""))
         bound.info("message.received", text=message.text, via="pending_confirmation")
     else:
+        # Not a !mom command, not a recognized mention, not a pending-write
+        # reaction — dropped silently by design (plain room chatter). Logged
+        # at debug so a real mention-detection miss (e.g. a client that
+        # renders a mention pill without sending m.mentions, and without a
+        # literal "@bernard" in the fallback body) is traceable instead of
+        # invisible — this exact shape caused a "no reply, nothing logged"
+        # live report (2026-07-03).
+        bound.debug("message.dropped_not_addressed", text=message.text, is_mention=message.is_mention)
         return
 
     try:

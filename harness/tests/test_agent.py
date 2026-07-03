@@ -18,6 +18,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import agent
 import agent_tools
 import bernard
+import bernard_agent_prompt
+import llm_client
 from message import Message
 
 
@@ -324,11 +326,19 @@ async def test_log_gap_capability_writes_sqlite_row(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_log_gap_ontology_calls_emit_gap_triple():
-    with patch("agent_tools.nl_to_sparql._emit_gap_triple", new=AsyncMock()) as mock_emit:
-        await agent_tools.log_gap("what's the ontology term for X", "no match", "ontology")
+async def test_log_gap_ontology_writes_capability_gaps_row(tmp_path, monkeypatch):
+    """Ontology gaps now share the capability_gaps SQLite table, distinguished
+    by gap_kind (Story 6.11 AC #6) — the RDF <urn:mak:gaps> writer is retired."""
+    db_path = str(tmp_path / "capability_gaps.db")
+    monkeypatch.setenv("CAPABILITY_GAPS_DB_PATH", db_path)
 
-    mock_emit.assert_called_once_with("what's the ontology term for X", "no match")
+    await agent_tools.log_gap("what's the ontology term for X", "no match", "ontology")
+
+    import sqlite3
+    con = sqlite3.connect(db_path)
+    rows = con.execute("SELECT raw_request, note, gap_kind FROM capability_gaps").fetchall()
+    con.close()
+    assert rows == [("what's the ontology term for X", "no match", "ontology")]
 
 
 @pytest.mark.asyncio
@@ -436,3 +446,161 @@ async def test_write_intent_agent_run_does_not_log_fuzzy_analytics(tmp_path, mon
         await agent.run(msg, session_id="s1")
 
     assert not Path(db_path).exists()
+
+
+@pytest.mark.asyncio
+async def test_capability_gaps_db_migration_adds_gap_kind_column(tmp_path, monkeypatch):
+    """A capability_gaps.db predating Story 6.11 lacks gap_kind — the
+    ALTER TABLE guard must backfill it without erroring on the old rows."""
+    import sqlite3
+    db_path = str(tmp_path / "capability_gaps.db")
+    con = sqlite3.connect(db_path)
+    con.execute("""
+        CREATE TABLE capability_gaps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            raw_request TEXT NOT NULL,
+            note TEXT,
+            room_id TEXT
+        )
+    """)
+    con.execute("INSERT INTO capability_gaps (timestamp, raw_request, note, room_id) VALUES ('t', 'old row', '', '')")
+    con.commit()
+    con.close()
+
+    monkeypatch.setenv("CAPABILITY_GAPS_DB_PATH", db_path)
+    await agent_tools.log_gap("new row", "note", "capability")
+
+    con = sqlite3.connect(db_path)
+    rows = con.execute("SELECT raw_request, gap_kind FROM capability_gaps ORDER BY id").fetchall()
+    con.close()
+    assert rows == [("old row", "capability"), ("new row", "capability")]
+
+
+# ---------------------------------------------------------------------------
+# query_sparql tool (Story 6.11): folds nl_to_sparql into the tool catalog
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_agent_run_dispatches_query_sparql_tool():
+    tool_call = _fake_tool_call("query_sparql", {"question": "makerspaces in Ghent"})
+
+    with patch("agent.llm_client.complete_with_tools", new=AsyncMock(side_effect=[
+                ("", [tool_call], "model", 1),
+                ("Here's what I found.", None, "model", 1),
+            ])), \
+         patch("agent_tools.query_sparql", new=AsyncMock(
+                return_value={"bindings": [{"name": {"value": "OpenFab"}}], "sparql": "SELECT ...", "count": 1})) as mock_qs:
+        msg = _make_message("makerspaces in Ghent", power_level=0)
+        response = await agent.run(msg, session_id="s1")
+
+    mock_qs.assert_called_once_with("makerspaces in Ghent", model=llm_client.MODEL, session_id="s1")
+    assert response == "Here's what I found."
+
+
+# ---------------------------------------------------------------------------
+# Tier-2 escalation (Story 6.11, AC #4/#8): query_sparql error or
+# empty-but-specific result retries the NEXT complete_with_tools call on
+# SONNET_MODEL, once per run.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_tier2_escalates_on_query_sparql_error():
+    tool_call = _fake_tool_call("query_sparql", {"question": "how many spaces are in Ghent"})
+
+    mock_complete = AsyncMock(side_effect=[
+        ("", [tool_call], "model", 1),
+        ("Escalated answer.", None, "model", 1),
+    ])
+    with patch("agent.llm_client.complete_with_tools", new=mock_complete), \
+         patch("agent_tools.query_sparql", new=AsyncMock(return_value={"error": "sparql failed"})):
+        msg = _make_message("how many spaces are in Ghent", power_level=0)
+        await agent.run(msg, session_id="s1")
+
+    assert mock_complete.call_args_list[0].kwargs["model"] == llm_client.MODEL
+    assert mock_complete.call_args_list[1].kwargs["model"] == llm_client.SONNET_MODEL
+
+
+@pytest.mark.asyncio
+async def test_tier2_escalates_on_empty_and_specific_question():
+    tool_call = _fake_tool_call("query_sparql", {"question": "how many spaces are open in Ghent"})
+
+    mock_complete = AsyncMock(side_effect=[
+        ("", [tool_call], "model", 1),
+        ("Escalated answer.", None, "model", 1),
+    ])
+    with patch("agent.llm_client.complete_with_tools", new=mock_complete), \
+         patch("agent_tools.query_sparql", new=AsyncMock(return_value={"bindings": [], "sparql": "SELECT ...", "count": 0})):
+        msg = _make_message("how many spaces are open in Ghent", power_level=0)
+        await agent.run(msg, session_id="s1")
+
+    assert mock_complete.call_args_list[0].kwargs["model"] == llm_client.MODEL
+    assert mock_complete.call_args_list[1].kwargs["model"] == llm_client.SONNET_MODEL
+
+
+@pytest.mark.asyncio
+async def test_tier2_does_not_escalate_on_empty_generic_question():
+    """Regression guard: zero bindings alone is not enough — the question
+    must also contain one of _SPECIFIC_ANSWER_KEYWORDS."""
+    tool_call = _fake_tool_call("query_sparql", {"question": "tell me about spaces in Ghent"})
+
+    mock_complete = AsyncMock(side_effect=[
+        ("", [tool_call], "model", 1),
+        ("Normal empty-result answer.", None, "model", 1),
+    ])
+    with patch("agent.llm_client.complete_with_tools", new=mock_complete), \
+         patch("agent_tools.query_sparql", new=AsyncMock(return_value={"bindings": [], "sparql": "SELECT ...", "count": 0})):
+        msg = _make_message("tell me about spaces in Ghent", power_level=0)
+        await agent.run(msg, session_id="s1")
+
+    assert mock_complete.call_args_list[0].kwargs["model"] == llm_client.MODEL
+    assert mock_complete.call_args_list[1].kwargs["model"] == llm_client.MODEL
+
+
+@pytest.mark.asyncio
+async def test_tier2_escalation_ceiling_no_second_retry():
+    """A second Trigger A/B after the escalated retry falls through to the
+    normal unknown_ack()/gap-log path — no third model attempt."""
+    tool_call = _fake_tool_call("query_sparql", {"question": "how many spaces are in Ghent"})
+
+    # One entry per agent.MAX_TOOL_ITERATIONS — always a tool call, always
+    # triggering Trigger A, so escalation-ceiling behavior isn't tied to a
+    # hardcoded iteration count.
+    mock_complete = AsyncMock(side_effect=[("", [tool_call], "model", 1)] * agent.MAX_TOOL_ITERATIONS)
+    with patch("agent.llm_client.complete_with_tools", new=mock_complete), \
+         patch("agent_tools.query_sparql", new=AsyncMock(return_value={"error": "sparql failed"})), \
+         patch("agent_tools.log_fuzzy_question") as mock_log_fuzzy:
+        msg = _make_message("how many spaces are in Ghent", power_level=0)
+        response = await agent.run(msg, session_id="s1", fuzzy=True)
+
+    models_used = [c.kwargs["model"] for c in mock_complete.call_args_list]
+    expected = [llm_client.MODEL, llm_client.SONNET_MODEL] + [llm_client.MODEL] * (agent.MAX_TOOL_ITERATIONS - 2)
+    assert models_used == expected
+    assert response == bernard.unknown_ack()
+    mock_log_fuzzy.assert_called_once_with("how many spaces are in Ghent", resolved=False, room_id="!room:x")
+
+
+# ---------------------------------------------------------------------------
+# faq_hint passthrough (Story 6.11, AC #5/#8)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_faq_hint_appended_to_system_prompt():
+    mock_complete = AsyncMock(return_value=("answer", None, "model", 1))
+    with patch("agent.llm_client.complete_with_tools", new=mock_complete):
+        msg = _make_message("how many spaces are open now in Berlin and which one?", power_level=0)
+        await agent.run(msg, session_id="s1", faq_hint="validated pattern text")
+
+    system_arg = mock_complete.call_args.kwargs["system"]
+    assert "validated pattern text" in system_arg
+    assert bernard_agent_prompt.SYSTEM_PROMPT in system_arg
+
+
+@pytest.mark.asyncio
+async def test_no_faq_hint_leaves_system_prompt_unchanged():
+    mock_complete = AsyncMock(return_value=("answer", None, "model", 1))
+    with patch("agent.llm_client.complete_with_tools", new=mock_complete):
+        msg = _make_message("what's the status of openfab?", power_level=0)
+        await agent.run(msg, session_id="s1")
+
+    assert mock_complete.call_args.kwargs["system"] == bernard_agent_prompt.SYSTEM_PROMPT

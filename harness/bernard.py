@@ -262,6 +262,12 @@ def travel_ors_unavailable_ack(fallback_result: str = "") -> str:
                 fallback_result=fallback_result)
 
 
+def travel_ambiguous_origin_ack(query: str, candidates: list[str]) -> str:
+    return _bot("travel_ambiguous_origin",
+                "'{query}' matches multiple spaces: {candidates}. Try again with the exact name.",
+                query=query, candidates=", ".join(candidates))
+
+
 def seeded_note_ack(count: int) -> str:
     return _bot("seeded_note",
                 "{count} seeded space(s) also fall in range — they haven't registered an endpoint yet. Want me to list them?",

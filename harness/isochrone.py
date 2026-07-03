@@ -69,6 +69,19 @@ class IsochroneTimeoutError(IsochroneError):
     pass
 
 
+class OriginAmbiguousError(IsochroneError):
+    """Raised when an origin substring-matches 2+ spaces and none is an exact
+    name match — silently picking one (even a ranked one) risks resolving to
+    the wrong space entirely (e.g. 'openfab' → Brussels OpenFab vs an
+    unrelated 'Openfab OzU' in Istanbul). Report all candidates and ask the
+    user to retry with the exact name instead of guessing."""
+
+    def __init__(self, query: str, candidates: list[str]):
+        self.query = query
+        self.candidates = candidates
+        super().__init__(f"'{query}' matches multiple spaces: {', '.join(candidates)}. Try again with the exact name.")
+
+
 def _snap_hours(hours: float) -> float | None:
     """Snap hours up to nearest bucket. Returns None if above max bucket (pass-through)."""
     for bucket in HOUR_BUCKETS:
@@ -165,25 +178,41 @@ SELECT ?name ?lat ?lon WHERE {
     ?s a mom:Space ;
        schema:name ?name ;
        schema:geo [schema:latitude ?lat ; schema:longitude ?lon] .
+    OPTIONAL { ?s mom:endpointUrl ?e }
     FILTER(CONTAINS(LCASE(STR(?name)), LCASE("{origin}")))
+    BIND(IF(LCASE(STR(?name)) = LCASE("{origin}"), 1, 0) AS ?exact)
+    BIND(IF(BOUND(?e), 1, 0) AS ?confirmed)
   }
-} LIMIT 5
+} ORDER BY DESC(?exact) DESC(?confirmed) ?name LIMIT 5
 """
 
 
 async def _resolve_origin(origin: str) -> tuple[float, float] | None:
-    """Resolve origin to (lat, lon): Oxigraph space name first, Nominatim city second."""
+    """Resolve origin to (lat, lon): Oxigraph space name first, Nominatim city
+    second. An exact (case-insensitive) name match is used immediately even
+    if other spaces also substring-match — no ambiguity there. But if there's
+    no exact match and 2+ spaces substring-match (e.g. 'openfab' hitting both
+    Brussels 'OpenFab' and an unrelated 'Openfab OzU' in Istanbul), silently
+    picking one — even the SPARQL-ranked top one — risks resolving to the
+    wrong space entirely. Raise OriginAmbiguousError instead of guessing."""
     import re
     safe = re.sub(r'["{}<>\\' + r"\n\r]", "", origin)
     try:
         bindings, _ = await sparql_client.run_select(_RESOLVE_SPACE_QUERY.replace('"{origin}"', f'"{safe}"'))
-        if bindings:
-            if len(bindings) > 1:
-                log.info("isochrone.origin_multiple_spaces", origin=origin, count=len(bindings),
-                         first=bindings[0]["name"]["value"])
-            return float(bindings[0]["lat"]["value"]), float(bindings[0]["lon"]["value"])
     except Exception as e:
         log.warning("isochrone.origin_space_lookup_failed", origin=origin, error=str(e))
+        bindings = []
+
+    if bindings:
+        exact = [b for b in bindings if b["name"]["value"].strip().lower() == origin.strip().lower()]
+        if exact:
+            return float(exact[0]["lat"]["value"]), float(exact[0]["lon"]["value"])
+        if len(bindings) > 1:
+            names = [b["name"]["value"] for b in bindings]
+            log.info("isochrone.origin_ambiguous", origin=origin, candidates=names)
+            raise OriginAmbiguousError(origin, names)
+        return float(bindings[0]["lat"]["value"]), float(bindings[0]["lon"]["value"])
+
     return await query_commands.geocode_city(origin)
 
 

@@ -166,6 +166,73 @@ async def test_isochrone_ors_timeout_degrades_to_nearby(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# test_resolve_origin_query_orders_exact_and_confirmed_first (live bug,
+# 2026-07-02): "openfab" substring-matched both Brussels "OpenFab" (confirmed)
+# and an unrelated "Openfab OzU" in Istanbul — with no ORDER BY, Oxigraph
+# non-deterministically returned Istanbul first, silently sending the whole
+# travel search to the wrong continent. Query must now rank exact-name match
+# and confirmed-over-seeded before an arbitrary substring hit.
+# ---------------------------------------------------------------------------
+
+def test_resolve_space_query_orders_exact_and_confirmed_first():
+    import isochrone as iso_module
+    query = iso_module._RESOLVE_SPACE_QUERY
+    assert "ORDER BY DESC(?exact) DESC(?confirmed)" in query
+    assert "BIND(IF(LCASE(STR(?name)) = LCASE(" in query
+    assert "BIND(IF(BOUND(?e), 1, 0) AS ?confirmed)" in query
+
+
+@pytest.mark.asyncio
+async def test_resolve_origin_exact_match_wins_even_with_other_substring_hits(monkeypatch):
+    """An exact (case-insensitive) name match is used immediately, regardless
+    of SPARQL ordering or how many other spaces also substring-match — no
+    ambiguity when the user typed the real name."""
+    import isochrone as iso_module
+
+    bindings = [
+        {"name": {"value": "Openfab OzU"}, "lat": {"value": "41.032"}, "lon": {"value": "29.259"}},
+        {"name": {"value": "OpenFab"}, "lat": {"value": "50.833"}, "lon": {"value": "4.378"}},
+    ]
+    monkeypatch.setattr(sparql_client, "run_select", AsyncMock(return_value=(bindings, 10)))
+
+    coords = await iso_module._resolve_origin("openfab")
+
+    assert coords == (50.833, 4.378)
+
+
+@pytest.mark.asyncio
+async def test_resolve_origin_raises_ambiguous_when_no_exact_match(monkeypatch):
+    """No exact match + 2+ substring matches → OriginAmbiguousError, not a
+    silent guess (Nicolas: 'report all matches and ask to retry with exact
+    match'), even though the SPARQL query itself still ranks candidates."""
+    import isochrone as iso_module
+
+    bindings = [
+        {"name": {"value": "Hub Alpha"}, "lat": {"value": "1.0"}, "lon": {"value": "1.0"}},
+        {"name": {"value": "Hub Beta"}, "lat": {"value": "2.0"}, "lon": {"value": "2.0"}},
+    ]
+    monkeypatch.setattr(sparql_client, "run_select", AsyncMock(return_value=(bindings, 10)))
+
+    with pytest.raises(iso_module.OriginAmbiguousError) as exc_info:
+        await iso_module._resolve_origin("hub")
+
+    assert exc_info.value.query == "hub"
+    assert exc_info.value.candidates == ["Hub Alpha", "Hub Beta"]
+
+
+@pytest.mark.asyncio
+async def test_resolve_origin_single_substring_match_is_not_ambiguous(monkeypatch):
+    import isochrone as iso_module
+
+    bindings = [{"name": {"value": "Superlab Engineering"}, "lat": {"value": "3.0"}, "lon": {"value": "4.0"}}]
+    monkeypatch.setattr(sparql_client, "run_select", AsyncMock(return_value=(bindings, 10)))
+
+    coords = await iso_module._resolve_origin("superlab")
+
+    assert coords == (3.0, 4.0)
+
+
+# ---------------------------------------------------------------------------
 # test_fuzzy_suggest
 # ---------------------------------------------------------------------------
 

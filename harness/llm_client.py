@@ -12,6 +12,12 @@ DEFAULT_MODEL = "google/gemma-3-12b-it"
 # Set from config.yaml bot.model at startup; falls back to DEFAULT_MODEL.
 MODEL = DEFAULT_MODEL
 
+# Tier-2 escalation model (Story 6.11) — the single named reference to the
+# stronger model used when agent.py's loop hits a Trigger A/B escalation.
+# Previously hardcoded inside nl_to_sparql.py; now lives here since escalation
+# is decided by agent.py's loop, not by nl_to_sparql itself (AC #3).
+SONNET_MODEL = "anthropic/claude-sonnet-4-5"
+
 
 REQUEST_TIMEOUT_SECONDS = 15.0
 

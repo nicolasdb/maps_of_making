@@ -23,10 +23,15 @@ from message import Message
 
 log = structlog.get_logger()
 
-MAX_TOOL_ITERATIONS = 4
+MAX_TOOL_ITERATIONS = 6
+
+# Tier-2 escalation triggers (Story 6.11, AC #4). A fixed keyword list, not a
+# free-text/LLM judgment of "did the question imply specificity" — same shape
+# as query_commands._STATE_KEYWORDS.
+_SPECIFIC_ANSWER_KEYWORDS = ("how many", "how much", "which one", "which ", "count")
 
 
-async def run(message: Message, session_id: str = "", adapter=None, fuzzy: bool = False) -> str:
+async def run(message: Message, session_id: str = "", adapter=None, fuzzy: bool = False, faq_hint: str = "") -> str:
     bound = log.bind(session_id=session_id, room_id=message.room_id, user_id=message.user_id)
 
     # Confirmation is reaction-only (Story 6.9 follow-up) — a single ✅ is the
@@ -42,13 +47,24 @@ async def run(message: Message, session_id: str = "", adapter=None, fuzzy: bool 
     # for fuzzy-question analytics (AC #9); irrelevant to the write path.
     capability_gap_logged = False
 
+    system = bernard_agent_prompt.SYSTEM_PROMPT
+    if faq_hint:
+        system = bernard_agent_prompt.SYSTEM_PROMPT + "\n\n" + bernard_agent_prompt.FAQ_HINT_TEMPLATE.format(hint=faq_hint)
+
+    # Tier-2 escalation state (Story 6.11, AC #4): at most one retry across
+    # the whole run, on a per-run boolean, not a per-iteration counter.
+    escalated = False
+    escalate_next_call = False
+
     for _ in range(MAX_TOOL_ITERATIONS):
+        model = llm_client.SONNET_MODEL if escalate_next_call else llm_client.MODEL
+        escalate_next_call = False
         try:
             text, tool_calls, _model, _latency = await llm_client.complete_with_tools(
-                system=bernard_agent_prompt.SYSTEM_PROMPT,
+                system=system,
                 messages=messages,
                 tools=tools,
-                model=llm_client.MODEL,
+                model=model,
                 session_id=session_id,
             )
         except (llm_client.LLMRequestError, ValueError) as exc:
@@ -76,7 +92,7 @@ async def run(message: Message, session_id: str = "", adapter=None, fuzzy: bool 
         })
 
         for tc in tool_calls:
-            result = await _dispatch_tool(tc, message, bound)
+            result = await _dispatch_tool(tc, message, bound, session_id)
             if tc.function.name == "log_gap":
                 try:
                     tc_args = json.loads(tc.function.arguments or "{}")
@@ -84,6 +100,13 @@ async def run(message: Message, session_id: str = "", adapter=None, fuzzy: bool 
                     tc_args = {}
                 if tc_args.get("gap_kind") == "capability":
                     capability_gap_logged = True
+            if tc.function.name == "query_sparql" and not escalated:
+                if "error" in result:
+                    escalated = True
+                    escalate_next_call = True
+                elif result.get("count") == 0 and _is_specific_question(message.text):
+                    escalated = True
+                    escalate_next_call = True
             messages.append({
                 "role": "tool",
                 "tool_call_id": tc.id,
@@ -96,7 +119,12 @@ async def run(message: Message, session_id: str = "", adapter=None, fuzzy: bool 
     return bernard.unknown_ack()
 
 
-async def _dispatch_tool(tc, message: Message, bound) -> dict:
+def _is_specific_question(text: str) -> bool:
+    lower = text.lower()
+    return any(keyword in lower for keyword in _SPECIFIC_ANSWER_KEYWORDS)
+
+
+async def _dispatch_tool(tc, message: Message, bound, session_id: str = "") -> dict:
     name = tc.function.name
     try:
         args = json.loads(tc.function.arguments or "{}")
@@ -109,6 +137,8 @@ async def _dispatch_tool(tc, message: Message, bound) -> dict:
         if name == "query_map":
             kind = args.pop("kind", "")
             return {"result": await agent_tools.query_map(kind, **{k: v for k, v in args.items() if v is not None})}
+        if name == "query_sparql":
+            return await agent_tools.query_sparql(args.get("question", message.text), model=llm_client.MODEL, session_id=session_id)
         if name == "log_gap":
             await agent_tools.log_gap(
                 args.get("raw_request", message.text),

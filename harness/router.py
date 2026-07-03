@@ -3,8 +3,8 @@ import structlog
 import agent
 import agent_tools
 import bernard
+import faq_cache
 import intent_classifier
-import nl_to_sparql
 from message import Message
 
 log = structlog.get_logger()
@@ -20,21 +20,29 @@ async def route(message: Message, session_id: str, adapter=None) -> str:
     if (message.room_id, message.user_id) in agent_tools.PENDING_ACTIONS:
         return await agent.run(message, session_id=session_id, adapter=adapter)
 
+    # Tier 0 (Story 6.11): a FAQ-cache hit skips intent classification but
+    # NOT the model call — it injects a validated-pattern hint into
+    # agent.run()'s system prompt. A miss falls through to classify() below,
+    # unchanged.
+    faq_entry = faq_cache.match(message.text)
+    if faq_entry is not None:
+        hint = f"{faq_entry['description']}\n{faq_entry['sparql_template']}"
+        return await agent.run(message, session_id=session_id, adapter=adapter, faq_hint=hint)
+
     intent = await intent_classifier.classify(message.text, session_id=session_id)
 
     if intent == "unknown":
         return await agent.run(message, session_id=session_id, adapter=adapter, fuzzy=True)
 
-    if intent == "query":
+    if intent in ("query", "nl_discovery"):
         # query_commands.dispatch() is an unwired stub (always unknown_ack —
         # never finished post-6.3, discovered live during 6.10 verification).
-        # Route through the same tool-calling agent as `unknown` until a
-        # dedicated query dispatcher lands; not a "fuzzy" question so it's
-        # excluded from fuzzy_questions analytics (fuzzy defaults False).
+        # nl_discovery used to dispatch directly to nl_to_sparql.dispatch();
+        # that path is collapsed into agent.run() too (Story 6.11) — SPARQL
+        # generation is now a tool (query_sparql) the loop can call. Neither
+        # is a "fuzzy" question so both are excluded from fuzzy_questions
+        # analytics (fuzzy defaults False).
         return await agent.run(message, session_id=session_id, adapter=adapter)
-
-    if intent == "nl_discovery":
-        return await nl_to_sparql.dispatch(message, session_id=session_id)
 
     if intent == "write":
         return await agent.run(message, session_id=session_id, adapter=adapter)

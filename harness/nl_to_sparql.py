@@ -1,15 +1,15 @@
-"""NL→SPARQL dispatch for the nl_discovery intent (Story 6.4)."""
+"""NL→SPARQL generation, exposed as the `query_sparql` tool (Story 6.11 —
+formerly a standalone router-facing dispatch() for the nl_discovery intent,
+Story 6.4). `generate_and_run()` is a plain callable wrapped by
+agent_tools.query_sparql(); the caller supplies the model (no more hardcoded
+model choice here — see AC #3)."""
 import os
 import re
-import uuid
-from datetime import datetime, timezone
 
 import structlog
 
-import bernard
 import llm_client
 import sparql_client
-from message import Message
 
 log = structlog.get_logger()
 
@@ -67,53 +67,102 @@ FORBIDDEN = re.compile(
 # Sanitize user input going into LLM prompt to prevent prompt injection
 _SANITIZE = re.compile(r'[{}<>"\\' + r"\n\r\x00-\x1f]", re.ASCII)
 
+PREFIX_BLOCK = """PREFIX mom: <https://nicolasdb.github.io/mapsofmaking_ontology/ns#>
+PREFIX schema: <https://schema.org/>
+PREFIX iop: <https://nicolasdb.github.io/mapsofmaking_ontology/iop#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+"""
+
+# Strips any PREFIX/BASE lines the model emits on its own (unreliable — see
+# _ensure_prefixes) so ours always wins, never duplicates.
+_PREFIX_LINE_RE = re.compile(r'^\s*(PREFIX|BASE)\s+\S*\s*<[^>]*>\s*$', re.IGNORECASE | re.MULTILINE)
+
+
+def _ensure_prefixes(sparql: str) -> str:
+    """Prepend PREFIX_BLOCK to the model's SELECT body, stripping any PREFIX
+    lines it emitted itself. The prompt tells the model which prefixes exist
+    but LLMs unreliably repeat that boilerplate in their own output — Oxigraph
+    then 400s on an undeclared prefix. Don't depend on model compliance for
+    something code can just guarantee (model-agnostic by construction)."""
+    body = _PREFIX_LINE_RE.sub("", sparql).strip()
+    return PREFIX_BLOCK + body
+
+
 NL_TO_SPARQL_SYSTEM = """You are a SPARQL generator for a makerspace directory.
-Available named graphs: urn:mak:space/<slug> (registered spaces), urn:mak:canary/<slug>.
-Prefixes:
+Prefixes (already declared for you — do NOT repeat PREFIX lines in your output):
   PREFIX mom: <https://nicolasdb.github.io/mapsofmaking_ontology/ns#>
   PREFIX schema: <https://schema.org/>
   PREFIX iop: <https://nicolasdb.github.io/mapsofmaking_ontology/iop#>
+  PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-Ontology context:
+Graph shape (this is the one thing that varies between question types — copy it
+exactly): each space's data lives in its OWN named graph, urn:mak:space/<slug>.
+There is no single fixed graph name to query — you must wildcard it and filter:
+
+  GRAPH ?g {{
+    ?s a mom:Space ; schema:name ?name .
+    ...
+    FILTER(STRSTARTS(STR(?g), "urn:mak:space/"))
+  }}
+
+A space only counts as "registered"/"confirmed" (not just a seeded directory
+listing) if it has a mom:endpointUrl. Add `?s mom:endpointUrl ?e .` to the
+graph pattern when the question implies a real, live space, not a stub listing.
+
+Boolean fields (e.g. mom:openNow) are typed literals — match them as a typed
+literal in the triple, not a bare comparison:
+
+  ?s mom:openNow "true"^^xsd:boolean .    # for "open now"
+  ?s mom:openNow "false"^^xsd:boolean .   # for "closed now"
+
+Worked example (city + open state — adapt the FILTER/city string to the question):
+
+  SELECT ?name ?city ?website WHERE {{
+    GRAPH ?g {{
+      ?s a mom:Space ;
+         schema:name ?name ;
+         mom:openNow "true"^^xsd:boolean ;
+         mom:endpointUrl ?e .
+      OPTIONAL {{ ?s schema:addressLocality ?city }}
+      OPTIONAL {{ ?s schema:url ?website }}
+      FILTER(STRSTARTS(STR(?g), "urn:mak:space/"))
+      FILTER(CONTAINS(LCASE(STR(?city)), LCASE("berlin")))
+    }}
+  }} LIMIT 15
+
+Worked example (tag/specialty + city):
+
+  SELECT ?name ?city ?website WHERE {{
+    GRAPH ?g {{
+      ?s a mom:Space ;
+         schema:name ?name ;
+         schema:knowsAbout ?specialty ;
+         mom:endpointUrl ?e .
+      OPTIONAL {{ ?s schema:addressLocality ?city }}
+      OPTIONAL {{ ?s schema:url ?website }}
+      FILTER(STRSTARTS(STR(?g), "urn:mak:space/"))
+      FILTER(CONTAINS(LCASE(STR(?specialty)), LCASE("laser")))
+      FILTER(CONTAINS(LCASE(STR(?city)), LCASE("ghent")))
+    }}
+  }} LIMIT 15
+
+Ontology context (available classes/properties beyond the ones shown above):
 {ontology_slice}
 
 Rules:
-- Return ONLY a SPARQL SELECT query. No explanation, no markdown.
-- Query only the named graphs above. Never use DROP/INSERT/DELETE/UPDATE.
+- Return ONLY a SPARQL SELECT query, starting with SELECT (not PREFIX — the
+  prefixes above are already in scope). No explanation, no markdown.
+- Query only urn:mak:space/<slug> graphs (via the GRAPH ?g wildcard above) or
+  urn:mak:canary/<slug>. Never use DROP/INSERT/DELETE/UPDATE.
 - Limit results to 15 unless the question implies otherwise.
 - Use CONTAINS(LCASE(?x), LCASE("term")) for string matching.
 """
-
-GAP_INSERT = """PREFIX mom: <https://nicolasdb.github.io/mapsofmaking_ontology/ns#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-
-INSERT DATA {{
-  GRAPH <urn:mak:gaps> {{
-    <urn:mak:gap/{gap_id}> a mom:OntologyGap ;
-      mom:rawQuery "{raw_query}" ;
-      mom:rawLLMOutput "{raw_llm}" ;
-      mom:gapTimestamp "{timestamp}"^^xsd:dateTime .
-  }}
-}}"""
-
 
 _FENCE_RE = re.compile(r"^```[a-z]*\n?|\n?```$", re.MULTILINE)
 
 
 def _strip_fence(s: str) -> str:
     return _FENCE_RE.sub("", s).strip()
-
-
-def _escape_sparql_literal(s: str) -> str:
-    return (
-        s.replace("\\", "\\\\")
-        .replace('"', '\\"')
-        .replace("\n", " ")
-        .replace("\r", " ")
-        .replace("\t", " ")
-        .replace("{", "{{")
-        .replace("}", "}}")
-    )
 
 
 async def _load_ontology_cache() -> str:
@@ -128,96 +177,49 @@ async def _load_ontology_cache() -> str:
     return _ONTOLOGY_CACHE or ""
 
 
-async def _emit_gap_triple(raw_query: str, raw_llm: str) -> None:
-    gap_id = str(uuid.uuid4())
-    timestamp = datetime.now(timezone.utc).isoformat()
-    sparql = GAP_INSERT.format(
-        gap_id=gap_id,
-        raw_query=_escape_sparql_literal(raw_query),
-        raw_llm=_escape_sparql_literal(raw_llm),
-        timestamp=timestamp,
-    )
-    try:
-        await sparql_client.run_update(sparql)
-        log.info("gap.written", gap_id=gap_id)
-    except Exception as exc:
-        log.warning("gap.write_failed", gap_id=gap_id, error=str(exc))
-
-
-async def dispatch(message: Message, session_id: str = "") -> str:
+async def generate_and_run(question: str, model: str, session_id: str = "") -> dict:
+    """LLM→SPARQL→execute. Caller (agent_tools.query_sparql) supplies the
+    model — this module does not choose its own (AC #3). Returns a plain
+    dict (bindings + sparql text + count) rather than a pre-formatted
+    Bernard string; the agent's tool-calling loop decides how to present it."""
     global _ONTOLOGY_CACHE
 
-    # Load or refresh ontology cache
     if _ONTOLOGY_CACHE is None or os.environ.get("RELOAD_ONTOLOGY") == "1":
         await _load_ontology_cache()
 
     if not _ONTOLOGY_CACHE:
         log.warning("ontology.cache_unavailable", session_id=session_id)
-        await _emit_gap_triple(message.text, "ontology cache unavailable")
-        return bernard.nl_gap_ack()
+        return {"error": "ontology cache unavailable"}
 
-    safe_text = _SANITIZE.sub(" ", message.text)
+    safe_text = _SANITIZE.sub(" ", question)
 
-    # Generate SPARQL via LLM
     try:
         raw, _, _ = await llm_client.complete_with_system(
             system=NL_TO_SPARQL_SYSTEM.format(ontology_slice=_ONTOLOGY_CACHE),
             user=safe_text,
-            model="anthropic/claude-sonnet-4-5",
+            model=model,
             temperature=0.0,
             max_tokens=512,
             session_id=session_id,
         )
-        sparql = _strip_fence(raw)
-        log.info("sparql.generated", session_id=session_id)
+        sparql = _ensure_prefixes(_strip_fence(raw))
+        log.info("sparql.generated", session_id=session_id, sparql=sparql)
     except Exception as exc:
         log.warning("llm.nl_sparql_failed", error=str(exc), session_id=session_id)
-        await _emit_gap_triple(message.text, "LLM error: " + str(exc))
-        return bernard.nl_gap_ack()
+        return {"error": f"LLM error: {exc}"}
 
-    # Security: reject mutating statements
     if FORBIDDEN.search(sparql):
         log.warning(
             "sparql.security_rejected",
             session_id=session_id,
             sparql_preview=sparql[:120],
         )
-        return bernard.nl_invalid_sparql_ack()
+        return {"error": "forbidden_sparql", "sparql": sparql}
 
-    # Execute query
     try:
         bindings, _ = await sparql_client.run_select(sparql)
     except Exception as exc:
-        log.warning("sparql.nl_select_failed", error=str(exc), session_id=session_id)
-        await _emit_gap_triple(message.text, sparql)
-        return bernard.nl_gap_ack()
+        log.warning("sparql.nl_select_failed", error=str(exc), session_id=session_id, sparql=sparql)
+        return {"error": str(exc), "sparql": sparql}
 
-    if not bindings:
-        await _emit_gap_triple(message.text, sparql)
-        return bernard.nl_empty_ack()
-
-    # Format results
-    def _val(row: dict, *keys: str) -> str:
-        for k in keys:
-            v = row.get(k)
-            if isinstance(v, dict):
-                return v.get("value", "") or ""
-        return ""
-
-    displayed = bindings[:15]
-    lines = []
-    for row in displayed:
-        name = _val(row, "name")
-        url = _val(row, "url", "website")
-        if name and url:
-            lines.append(f"• [{name}]({url})")
-        elif name:
-            lines.append(f"• {name}")
-        else:
-            first_val = _val(row, *row.keys())
-            lines.append(f"• {first_val}")
-
-    total = len(bindings)
-    count_label = f"{len(displayed)} of {total}" if total > len(displayed) else str(total)
-    list_text = "\n".join(lines)
-    return bernard.nl_result_ack(count=count_label, list_text=list_text, sparql_block=sparql)
+    return {"bindings": bindings, "sparql": sparql, "count": len(bindings)}

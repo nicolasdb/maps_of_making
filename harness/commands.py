@@ -6,6 +6,7 @@ classifications, so they never go through router.route()/intent_classifier.
 import asyncio
 import difflib
 import os
+import re
 from typing import Optional
 
 import httpx
@@ -44,6 +45,14 @@ LINK_HANDLER_URL = os.environ.get("LINK_HANDLER_URL", "http://mak-link-handler:8
 BOT_KEY_SECRET = os.environ.get("BOT_KEY_SECRET", "")
 
 ALLOWED_FIELDS = frozenset({"state.open", "contact.irc", "contact.matrix", "contact.twitter", "mom.memberOf"})
+
+# Origin can be multi-word ("openfab ozu"), so `travel` can't rely on
+# positional split(maxsplit=2) like the other commands — it peels the
+# trailing duration+mode off the end of the string instead.
+_TRAVEL_ARGS_RE = re.compile(
+    r"^(?P<origin>.+?)\s+(?P<time>\d+(?:\.\d+)?\s*(?:min|h)?(?:\s*by\s+(?:bike|foot|car))?)$",
+    re.IGNORECASE,
+)
 
 
 def _can_write(power_level: int, field_path: str) -> tuple[bool, str]:
@@ -235,9 +244,12 @@ async def try_handle(text: str, user_id: str, room_id: str, session_id: str, *, 
         network_name = parts[1] if len(parts) == 2 else parts[1] + " " + parts[2]
         return await query_commands.network(network_name)
 
-    if verb == "travel" and len(parts) >= 3:
-        # parts[1]=origin, parts[2]="2h [by bike|by foot]"
-        return await _handle_travel(parts[1], parts[2], room_id, bound)
+    if verb == "travel" and len(parts) >= 2:
+        remainder = " ".join(parts[1:])
+        m = _TRAVEL_ARGS_RE.match(remainder)
+        if not m:
+            return "Usage: `!mom travel {origin} {hours}h` (e.g. `2h` or `30min`, optional `by bike`/`by foot`)"
+        return await _handle_travel(m.group("origin").strip(), m.group("time").strip(), room_id, bound)
 
     # Fuzzy-suggest before falling through to LLM classifier
     if verb in KNOWN_VERBS:
@@ -425,6 +437,13 @@ async def _handle_read_slug(slug: str, bound) -> str:
     return bernard.read_list_ack(data)
 
 
+# Rough average speeds for the bounding-box fallback (ORS timeout/unavailable
+# degrade path) — the isochrone path itself is mode-aware via ORS profiles,
+# but the fallback previously used a single hardcoded 80 km/h for every mode,
+# giving "20min by bike" a 26km radius (car speed on a bike request).
+_FALLBACK_SPEED_KMH = {"by bike": 15.0, "by foot": 5.0, "by car": 40.0}
+
+
 async def _handle_travel(origin: str, hours_and_mode: str, room_id: str, bound) -> str:
     """Parse hours+mode from '!mom travel {origin} {hours}[h] [by bike|by foot]'."""
     # Parse mode suffix from hours_and_mode
@@ -450,17 +469,21 @@ async def _handle_travel(origin: str, hours_and_mode: str, room_id: str, bound) 
 
     try:
         result = await isochrone.travel_search(origin, hours_val, mode_input=mode, room_id=room_id)
+    except isochrone.OriginAmbiguousError as e:
+        return bernard.travel_ambiguous_origin_ack(e.query, e.candidates)
     except isochrone.IsochroneError as e:
         return bernard.travel_ors_unavailable_ack(str(e))
 
     if result["fallback"]:
         # ORS timed out — degrade to nearby bounding box. Use resolved coords if
         # available so space-name origins (e.g. "superlab") don't re-hit Nominatim.
+        speed_kmh = _FALLBACK_SPEED_KMH.get(mode.lower().strip(), 40.0)
+        radius_km = hours_val * speed_kmh
         coords = result.get("coords")
         if coords:
-            fallback = await query_commands.nearby_from_coords(coords, hours_val * 80)
+            fallback = await query_commands.nearby_from_coords(coords, radius_km)
         else:
-            fallback = await query_commands.nearby(origin, hours_val * 80)
+            fallback = await query_commands.nearby(origin, radius_km)
         return bernard.travel_timeout_ack(fallback)
 
     confirmed = result["confirmed"]
@@ -469,7 +492,8 @@ async def _handle_travel(origin: str, hours_and_mode: str, room_id: str, bound) 
 
     if not confirmed:
         seeded_note = bernard.seeded_note_ack(seeded_count) if seeded_count > 0 else ""
-        return bernard.nearby_empty_ack(radius=int(hours_val * 80), city=origin, seeded_note=seeded_note)
+        speed_kmh = _FALLBACK_SPEED_KMH.get(mode.lower().strip(), 40.0)
+        return bernard.nearby_empty_ack(radius=int(hours_val * speed_kmh), city=origin, seeded_note=seeded_note)
 
     list_text = "\n".join(f"• {s['name']}" for s in confirmed)
     seeded_note = bernard.seeded_note_ack(seeded_count) if seeded_count > 0 else ""

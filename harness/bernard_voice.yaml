@@ -54,6 +54,7 @@ bot:
   travel_results: "Within {hours} of {origin} by {mode} — {count} confirmed space(s):\n{list}\n{seeded_note}"
   travel_timeout: "ORS took too long — falling back to a bounding box. {fallback_result}"
   travel_ors_unavailable: "Travel search is temporarily unavailable. {fallback_result}"
+  travel_ambiguous_origin: "'{query}' matches multiple spaces: {candidates}. Try again with the exact name."
   seeded_note: "{count} seeded space(s) also fall in range — they haven't registered an endpoint yet."
   # Help and fuzzy-suggest
   help_header: "Here's what I do."

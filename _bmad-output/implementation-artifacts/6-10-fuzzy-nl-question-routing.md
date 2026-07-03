@@ -1,6 +1,16 @@
 # Story 6.10: Fuzzy NL Question Routing
 
-Status: review
+Status: done — superseded by Story 6.11
+
+> **2026-07-03:** Story 6.11 ("Collapse NL Answer Paths") absorbed and closed
+> this story's remaining fork. 6.10 routed `intent="unknown"` through
+> `agent.run()`; the `nl_discovery` → `nl_to_sparql.dispatch()` path (RDF gap
+> graph, hardcoded Sonnet) was left untouched pending a later story — that
+> path is exactly what 6.11 removed, folding `nl_discovery` into the same
+> `agent.run()` call as `unknown`/`query`. 6.10's own AC #8 (live VPS
+> verification) was carried forward and closed under 6.11's live-debugging
+> rounds instead of run separately. No further work needed under this story
+> number.
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

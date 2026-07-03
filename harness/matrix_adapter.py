@@ -46,6 +46,27 @@ class MatrixAdapter:
     # Matrix fallback quote: lines starting with "> " followed by a blank line
     _FALLBACK_RE = re.compile(r"^(>[^\n]*\n)+\n", re.MULTILINE)
 
+    # Trigger-suppression regions (plaintext body): a ```fenced``` block, an
+    # `inline code` span, or a "> " blockquote line. A @bernard/pill mention
+    # that lives ONLY inside one of these is demonstrating the command to
+    # someone, not addressing the bot — strip these regions before running
+    # mention detection so "try `@bernard find laser`" or "> @bernard ..."
+    # doesn't wake Bernard (feature request 2026-07-03).
+    _FENCED_CODE_RE = re.compile(r"```.*?```", re.DOTALL)
+    _INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
+    _BLOCKQUOTE_LINE_RE = re.compile(r"^\s*>.*$", re.MULTILINE)
+    # HTML equivalents in formatted_body (Matrix renders markdown to these).
+    _HTML_CODE_QUOTE_RE = re.compile(
+        r"<(pre|code|blockquote)\b[^>]*>.*?</\1>", re.DOTALL | re.IGNORECASE
+    )
+
+    @classmethod
+    def _strip_quoted_and_code(cls, text: str) -> str:
+        text = cls._FENCED_CODE_RE.sub(" ", text)
+        text = cls._INLINE_CODE_RE.sub(" ", text)
+        text = cls._BLOCKQUOTE_LINE_RE.sub(" ", text)
+        return text
+
     async def _on_message(self, room: MatrixRoom, event: RoomMessageText) -> None:
         if event.sender.lower() == self.client.user_id.lower():
             return
@@ -63,14 +84,37 @@ class MatrixAdapter:
         if relates.get("rel_type") == "m.thread":
             thread_id = relates.get("event_id", "")
 
-        # Intentional-mentions (MSC3952 / Matrix 1.7): a client-tagged
-        # @mention names the bot's own mxid here regardless of display-name
-        # casing or sentence position. Fall back to a literal "@bernard" in
-        # the raw body for clients that don't send m.mentions — a bare
-        # "bernard" at the start of a sentence (no @) is NOT a mention.
+        # Mention detection, three independent signals (any one is enough):
+        #   1. MSC3952 / Matrix 1.7 m.mentions naming the bot's mxid.
+        #   2. A literal "@bernard" anywhere in the plaintext body (how a user
+        #      who types the mxid by hand, e.g. Nicolas, comes through).
+        #   3. The bot's own mxid inside the formatted_body pill link
+        #      (<a href="matrix.to/#/@bernard:...">). Some clients (live:
+        #      @jason_p's, 2026-07-03) render a real mention pill via
+        #      formatted_body ONLY — no m.mentions field at all, and the
+        #      plaintext body carries just the display name "Bernard:" with no
+        #      "@". Without this check those pill-mentions were silently
+        #      dropped while the identical-looking message from a client that
+        #      does emit m.mentions worked fine.
+        # A bare "bernard" with no "@"/pill (even "Bernard:"/"Bernard," at the
+        # start) is deliberately NOT a mention: ambiguous with talking *about*
+        # Bernard ("Bernard, quel personnage!"), needs conversational
+        # continuity we don't have yet (decided 2026-07-03).
+        #
+        # The heuristic signals (2 + 3) run against the body/formatted_body
+        # with code + blockquote regions stripped, so a mention shown inside
+        # `inline code`, a ```fenced block```, or a "> " quote (i.e. someone
+        # demonstrating the command to another user) doesn't wake Bernard.
+        # m.mentions (signal 1) stays authoritative and un-stripped: a client
+        # only emits it on a genuine, intentional mention, never for text a
+        # user typed inside a code span.
         mentioned_ids = content.get("m.mentions", {}).get("user_ids", [])
+        formatted_body = content.get("formatted_body", "") or ""
+        trigger_body = self._strip_quoted_and_code(event.body)
+        trigger_formatted = self._HTML_CODE_QUOTE_RE.sub(" ", formatted_body)
         is_mention = self.client.user_id in mentioned_ids or bool(
-            re.search(r"@bernard\b", event.body, re.IGNORECASE)
+            re.search(r"@bernard\b", trigger_body, re.IGNORECASE)
+            or self.client.user_id.lower() in trigger_formatted.lower()
         )
 
         message = Message(
@@ -175,9 +219,17 @@ class MatrixAdapter:
         content: dict = {"msgtype": "m.text", "body": response}
         thread_root = context.thread_id or context.event_id
         if thread_root:
+            # is_falling_back + m.in_reply_to are the stable-Threads-spec
+            # (MSC3440) fields that tell thread-aware clients (Element) this
+            # is a genuine threaded reply, not a plain top-level message that
+            # happens to carry a thread tag. Without them, Element renders
+            # the reply BOTH inside the thread AND as a full duplicate in the
+            # main room timeline.
             content["m.relates_to"] = {
                 "rel_type": "m.thread",
                 "event_id": thread_root,
+                "is_falling_back": True,
+                "m.in_reply_to": {"event_id": thread_root},
             }
         resp = await self.client.room_send(
             room_id=context.room_id,

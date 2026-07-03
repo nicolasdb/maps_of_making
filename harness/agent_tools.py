@@ -40,9 +40,14 @@ def _init_capability_gaps_db(path: str) -> None:
             timestamp TEXT NOT NULL,
             raw_request TEXT NOT NULL,
             note TEXT,
-            room_id TEXT
+            room_id TEXT,
+            gap_kind TEXT NOT NULL DEFAULT 'capability'
         )
     """)
+    # Migration guard: existing DB files predate the gap_kind column (Story 6.11).
+    cols = {row[1] for row in con.execute("PRAGMA table_info(capability_gaps)").fetchall()}
+    if "gap_kind" not in cols:
+        con.execute("ALTER TABLE capability_gaps ADD COLUMN gap_kind TEXT NOT NULL DEFAULT 'capability'")
     con.commit()
     con.close()
 
@@ -63,15 +68,15 @@ def _init_fuzzy_questions_db(path: str) -> None:
     con.close()
 
 
-def _write_capability_gap(raw_request: str, note: str, room_id: str) -> None:
+def _write_capability_gap(raw_request: str, note: str, room_id: str, gap_kind: str = "capability") -> None:
     from datetime import datetime, timezone
 
     path = _capability_gaps_db_path()
     _init_capability_gaps_db(path)
     con = sqlite3.connect(path)
     con.execute(
-        "INSERT INTO capability_gaps (timestamp, raw_request, note, room_id) VALUES (?, ?, ?, ?)",
-        (datetime.now(timezone.utc).isoformat(), raw_request, note, room_id),
+        "INSERT INTO capability_gaps (timestamp, raw_request, note, room_id, gap_kind) VALUES (?, ?, ?, ?, ?)",
+        (datetime.now(timezone.utc).isoformat(), raw_request, note, room_id, gap_kind),
     )
     con.commit()
     con.close()
@@ -132,6 +137,13 @@ async def query_map(kind: str, **kwargs) -> str:
     if kind == "network":
         return await query_commands.network(kwargs["network_name"])
     raise ValueError(f"Unknown query_map kind: {kind!r}")
+
+
+async def query_sparql(question: str, model: str, session_id: str = "") -> dict:
+    """Read-only passthrough to nl_to_sparql.generate_and_run — for questions
+    that don't fit query_map's fixed find/nearby/network shapes. `model` is
+    supplied by the caller (agent.py's _dispatch_tool), not chosen here."""
+    return await nl_to_sparql.generate_and_run(question, model=model, session_id=session_id)
 
 
 # ---------------------------------------------------------------------------
@@ -215,13 +227,12 @@ def _apply_member_of_delta(current_array: list, new_value: str) -> list:
 # ---------------------------------------------------------------------------
 
 async def log_gap(raw_request: str, note: str, gap_kind: str, room_id: str = "") -> None:
-    if gap_kind == "ontology":
-        await nl_to_sparql._emit_gap_triple(raw_request, note)
-        return
-    if gap_kind == "capability":
-        _write_capability_gap(raw_request, note, room_id)
-        return
-    raise ValueError(f"Unknown gap_kind: {gap_kind!r}")
+    """Both gap kinds share the capability_gaps SQLite table now — the
+    ontology-vs-capability distinction is a column value, not a separate
+    store (Story 6.11, AC #6; retires the RDF <urn:mak:gaps> writer)."""
+    if gap_kind not in ("ontology", "capability"):
+        raise ValueError(f"Unknown gap_kind: {gap_kind!r}")
+    _write_capability_gap(raw_request, note, room_id, gap_kind=gap_kind)
 
 
 # ---------------------------------------------------------------------------
@@ -258,6 +269,20 @@ READ_TOOLS = [
                     "network_name": {"type": "string"},
                 },
                 "required": ["kind"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_sparql",
+            "description": "Generate and run a SPARQL query for a question that doesn't fit query_map's fixed find/nearby/network shapes. Use when the question needs a different filter/combination than those three support.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "question": {"type": "string", "description": "The user's natural-language question, verbatim"},
+                },
+                "required": ["question"],
             },
         },
     },

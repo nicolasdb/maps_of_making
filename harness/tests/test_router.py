@@ -1,10 +1,11 @@
-"""Tests for harness/router.py (Story 6.10): unknown intent reroutes to
-agent.run() (fuzzy=True) instead of a hard unknown_ack; query intent also
-routes to agent.run() (fuzzy=False) — query_commands.dispatch() turned out
-to be an unwired stub (always unknown_ack, discovered during live
-verification), so query was folded into the agent path same-day rather than
-left dead; nl_discovery dispatch is an untouched regression guard; the final
-unrecognized-intent fallback stays a hard unknown_ack."""
+"""Tests for harness/router.py (Story 6.10 + 6.11): unknown intent reroutes to
+agent.run() (fuzzy=True) instead of a hard unknown_ack; query and nl_discovery
+intents both route to agent.run() (fuzzy=False, unchanged call shape) — the
+nl_discovery branch's direct nl_to_sparql.dispatch() call was collapsed into
+the single agent.run() orchestrator in Story 6.11 (SPARQL generation is now
+the query_sparql tool); the final unrecognized-intent fallback stays a hard
+unknown_ack; a FAQ-cache hit (Story 6.11 Tier 0) skips classify() but still
+reaches agent.run(), just with a faq_hint payload."""
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -63,16 +64,48 @@ async def test_query_intent_routes_to_agent_run_not_fuzzy():
 
 
 @pytest.mark.asyncio
-async def test_nl_discovery_intent_dispatch_unchanged():
+async def test_nl_discovery_intent_routes_to_agent_run_not_fuzzy():
+    """nl_discovery no longer dispatches directly to nl_to_sparql — SPARQL
+    generation is now the query_sparql tool inside agent.run()'s loop
+    (Story 6.11 collapse). Same call shape as query."""
     with patch("router.intent_classifier.classify", new=AsyncMock(return_value="nl_discovery")), \
-         patch("router.nl_to_sparql.dispatch", new=AsyncMock(return_value="discovery result")) as mock_dispatch, \
-         patch("router.agent.run", new=AsyncMock()) as mock_run:
+         patch("router.agent.run", new=AsyncMock(return_value="discovery result")) as mock_run:
         msg = _make_message("what ontology terms exist for tools?")
         result = await router.route(msg, session_id="s1")
 
-    mock_dispatch.assert_called_once_with(msg, session_id="s1")
-    mock_run.assert_not_called()
+    mock_run.assert_called_once_with(msg, session_id="s1", adapter=None)
     assert result == "discovery result"
+
+
+@pytest.mark.asyncio
+async def test_faq_cache_hit_calls_agent_run_with_hint():
+    """A FAQ-cache hit skips classify() but still reaches agent.run() — the
+    model call still happens, only the hint payload differs (Story 6.11 AC #7)."""
+    with patch("router.faq_cache.match", return_value={
+                "trigger": "open now in berlin",
+                "description": "desc",
+                "sparql_template": "SELECT * WHERE {}",
+            }), \
+         patch("router.intent_classifier.classify", new=AsyncMock()) as mock_classify, \
+         patch("router.agent.run", new=AsyncMock(return_value="faq answer")) as mock_run:
+        msg = _make_message("how many spaces are open now in Berlin and which one?")
+        result = await router.route(msg, session_id="s1")
+
+    mock_classify.assert_not_called()
+    mock_run.assert_called_once_with(msg, session_id="s1", adapter=None, faq_hint="desc\nSELECT * WHERE {}")
+    assert result == "faq answer"
+
+
+@pytest.mark.asyncio
+async def test_faq_cache_miss_calls_agent_run_without_hint():
+    with patch("router.faq_cache.match", return_value=None), \
+         patch("router.intent_classifier.classify", new=AsyncMock(return_value="query")), \
+         patch("router.agent.run", new=AsyncMock(return_value="query result")) as mock_run:
+        msg = _make_message("could you show me the details of openfab?")
+        result = await router.route(msg, session_id="s1")
+
+    mock_run.assert_called_once_with(msg, session_id="s1", adapter=None)
+    assert result == "query result"
 
 
 @pytest.mark.asyncio
