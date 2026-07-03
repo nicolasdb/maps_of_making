@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-01
-last_updated: "2026-07-03 (6-10 closed done, superseded by 6-11; 6-11 done — round 7 closed AC#10 via live Oxigraph cross-check, shipped !mom gaps + gap-persistence fix + unconfirmed-results nudge, deferred 2 new findings)"
+last_updated: "2026-07-03 (6-10 closed done, superseded by 6-11; 6-11 done — round 7 closed AC#10 via live Oxigraph cross-check + round-8 code review closed the remaining faq.hit-log gap live, shipped !mom gaps + gap-persistence fix + unconfirmed-results nudge, 6 review patches applied, deferred 4 findings)"
 project: maps_of_making
 project_key: NOKEY
 tracking_system: file-system

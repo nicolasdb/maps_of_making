@@ -1,5 +1,25 @@
 # Deferred Work
 
+## Deferred from: code review of story-6-11-collapse-nl-answer-paths (2026-07-03)
+
+### Rule 3a's unconfirmed-count nudge relies on the LLM tallying rows itself
+
+`bernard_agent_prompt.py` rule 3a asks Gemma to report "N unregistered listing(s) also
+match" when reading `query_sparql`'s per-row `?confirmed` boolean, but the tool result
+carries no aggregate count — the model must count unconfirmed rows itself. This story's
+own live-debugging history (slug-guessing after Tier-2 escalation, missed `log_gap`
+calls) shows this class of task is where the model is least reliable. Not fixed here —
+revisit if live data shows the reported counts are wrong; a code-level `COUNT`/tally in
+`agent_tools.query_sparql`'s return shape would remove the reliance if it recurs.
+
+### Confirmed rows have no ordering precedence under result truncation
+
+`nl_to_sparql.py`'s worked SPARQL examples bind `?confirmed` per row but never `ORDER BY`
+it. No truncation logic exists yet in this diff, so it's not exploitable today — but if a
+future change caps `query_sparql` results for display, confirmed matches could be dropped
+in favor of unconfirmed ones since nothing prioritizes them. Add `ORDER BY DESC(?confirmed)`
+(or equivalent) if/when truncation is introduced.
+
 ## Deferred from: `!mom gaps` live testing (2026-07-03)
 
 ### `log_gap` is pure LLM self-report — no code-level backstop, real misses confirmed live

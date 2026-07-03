@@ -588,3 +588,29 @@ async def test_gaps_empty_reports_none_logged(monkeypatch):
     result = await commands.try_handle("gaps", "@u:x", "!room:x", "sid", context=ctx)
 
     assert result == bernard.gaps_empty_ack()
+
+
+@pytest.mark.asyncio
+async def test_gaps_custom_n_is_passed_through_and_clamped(monkeypatch):
+    import agent_tools
+    seen_limit = {}
+
+    def fake_read(limit):
+        seen_limit["value"] = limit
+        return []
+
+    monkeypatch.setattr(agent_tools, "read_recent_gaps", fake_read)
+
+    ctx = _make_context(power_level=100)
+    await commands.try_handle("gaps 20", "@u:x", "!room:x", "sid", context=ctx)
+    assert seen_limit["value"] == 20
+
+    await commands.try_handle("gaps 9999", "@u:x", "!room:x", "sid", context=ctx)
+    assert seen_limit["value"] == 100
+
+
+@pytest.mark.asyncio
+async def test_gaps_non_numeric_n_returns_usage_error():
+    ctx = _make_context(power_level=100)
+    result = await commands.try_handle("gaps abc", "@u:x", "!room:x", "sid", context=ctx)
+    assert "Usage" in result

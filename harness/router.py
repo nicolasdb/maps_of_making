@@ -26,6 +26,7 @@ async def route(message: Message, session_id: str, adapter=None) -> str:
     # unchanged.
     faq_entry = faq_cache.match(message.text)
     if faq_entry is not None:
+        log.info("faq.hit", trigger=faq_entry["trigger"], session_id=session_id)
         hint = f"{faq_entry['description']}\n{faq_entry['sparql_template']}"
         return await agent.run(message, session_id=session_id, adapter=adapter, faq_hint=hint)
 

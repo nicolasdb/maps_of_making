@@ -36,12 +36,14 @@ data/dendrite-media/*
 data/bot-keys/*
 data/bot-repos/*
 data/ohm/*
+data/bot-tasks/*
 !data/oxigraph/.gitkeep
 !data/nanoclaw/.gitkeep
 !data/dendrite-postgres/.gitkeep
 !data/dendrite-media/.gitkeep
 !data/bot-keys/.gitkeep
 !data/bot-repos/.gitkeep
+!data/bot-tasks/.gitkeep
 !data/ohm/.gitkeep
 
 # Integration tooling passed directly to maintainers — not in the MoM repo

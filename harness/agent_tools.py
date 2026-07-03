@@ -241,14 +241,17 @@ def read_recent_gaps(limit: int = 10) -> list[dict]:
     path = _capability_gaps_db_path()
     if not Path(path).exists():
         return []
+    _init_capability_gaps_db(path)  # migration guard: pre-6.11 DBs lack gap_kind
     con = sqlite3.connect(path)
-    con.row_factory = sqlite3.Row
-    rows = con.execute(
-        "SELECT timestamp, gap_kind, raw_request, note FROM capability_gaps ORDER BY id DESC LIMIT ?",
-        (limit,),
-    ).fetchall()
-    con.close()
-    return [dict(r) for r in rows]
+    try:
+        con.row_factory = sqlite3.Row
+        rows = con.execute(
+            "SELECT timestamp, gap_kind, raw_request, note FROM capability_gaps ORDER BY id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        con.close()
 
 
 # ---------------------------------------------------------------------------

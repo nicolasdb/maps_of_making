@@ -255,9 +255,13 @@ async def try_handle(text: str, user_id: str, room_id: str, session_id: str, *, 
     if verb == "gaps":
         if power_level < 100:
             return bernard.read_only_ack(user_id)
-        limit = 10
-        if len(parts) >= 2 and parts[1].strip().isdigit():
-            limit = int(parts[1].strip())
+        if len(parts) >= 2:
+            arg = parts[1].strip()
+            if not arg.isdigit():
+                return "Usage: `!mom gaps [N]` (e.g. `!mom gaps 20`)"
+            limit = min(int(arg), 100)
+        else:
+            limit = 10
         return _handle_gaps(limit)
 
     # Fuzzy-suggest before falling through to LLM classifier
