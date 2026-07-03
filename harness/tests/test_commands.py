@@ -551,3 +551,40 @@ async def test_travel_multi_word_origin_is_not_truncated(monkeypatch):
 
     origin_arg = travel_mock.call_args[0][0]
     assert origin_arg == "openfab ozu"
+
+
+# ---------------------------------------------------------------------------
+# !mom gaps — read-side counterpart to log_gap (2026-07-03): before this, gap
+# data was write-only telemetry nobody could ever retrieve.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_gaps_from_low_power_level_is_refused():
+    ctx = _make_context(power_level=0)
+    result = await commands.try_handle("gaps", "@u:x", "!room:x", "sid", context=ctx)
+    assert result == bernard.read_only_ack("@u:x")
+
+
+@pytest.mark.asyncio
+async def test_gaps_reports_recent_rows(monkeypatch):
+    import agent_tools
+    monkeypatch.setattr(agent_tools, "read_recent_gaps", lambda limit: [
+        {"timestamp": "2026-07-03T00:00:00", "gap_kind": "capability", "raw_request": "set a reminder", "note": "no reminder tool"},
+    ])
+
+    ctx = _make_context(power_level=100)
+    result = await commands.try_handle("gaps", "@u:x", "!room:x", "sid", context=ctx)
+
+    assert "set a reminder" in result
+    assert "capability" in result
+
+
+@pytest.mark.asyncio
+async def test_gaps_empty_reports_none_logged(monkeypatch):
+    import agent_tools
+    monkeypatch.setattr(agent_tools, "read_recent_gaps", lambda limit: [])
+
+    ctx = _make_context(power_level=100)
+    result = await commands.try_handle("gaps", "@u:x", "!room:x", "sid", context=ctx)
+
+    assert result == bernard.gaps_empty_ack()

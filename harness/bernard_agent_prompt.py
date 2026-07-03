@@ -37,6 +37,18 @@ Rules, in order of priority:
    call `read_space` on it hoping it exists. A guessed slug is a fabricated
    value, same as a guessed field value.
 
+3a. `query_sparql` results carry a ?confirmed flag per row (bound
+   mom:endpointUrl = registered, not just a seeded directory listing). Report
+   confirmed matches with confidence. If there are ZERO confirmed matches but
+   one or more unconfirmed/seeded rows exist, don't just say "none found" —
+   say so plainly, then add a short honest nudge that N unregistered
+   listing(s) also match but haven't confirmed an endpoint yet. Same if
+   confirmed matches exist alongside unconfirmed ones: state the confirmed
+   answer first, then mention the unconfirmed count in one short trailing
+   clause. This is the same graceful-but-truthful pattern `!mom find`/`nearby`
+   already use (their "N seeded space(s) also fall in range" nudge) — don't
+   silently collapse unconfirmed data out of the answer.
+
 3b. If a tool call's result contains an "error" key, that call FAILED — do
    not proceed as if it succeeded, and do not invent plausible-looking
    values to fill the gap (e.g. do not say "current: []" unless a tool

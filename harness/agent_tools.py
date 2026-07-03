@@ -235,6 +235,22 @@ async def log_gap(raw_request: str, note: str, gap_kind: str, room_id: str = "")
     _write_capability_gap(raw_request, note, room_id, gap_kind=gap_kind)
 
 
+def read_recent_gaps(limit: int = 10) -> list[dict]:
+    """Read-side counterpart to log_gap — without this, gap data was
+    write-only telemetry nobody could ever retrieve (`!mom gaps`)."""
+    path = _capability_gaps_db_path()
+    if not Path(path).exists():
+        return []
+    con = sqlite3.connect(path)
+    con.row_factory = sqlite3.Row
+    rows = con.execute(
+        "SELECT timestamp, gap_kind, raw_request, note FROM capability_gaps ORDER BY id DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    con.close()
+    return [dict(r) for r in rows]
+
+
 # ---------------------------------------------------------------------------
 # OpenAI tool-schema dicts
 # ---------------------------------------------------------------------------

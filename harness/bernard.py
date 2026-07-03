@@ -283,6 +283,14 @@ def did_you_mean_ack(verb: str, suggestion: str) -> str:
                 verb=verb, suggestion=suggestion)
 
 
+def gaps_report(count: int, list_text: str) -> str:
+    return _bot("gaps_report", "Last {count} logged gap(s):\n{list}", count=count, list=list_text)
+
+
+def gaps_empty_ack() -> str:
+    return _bot("gaps_empty", "No gaps logged yet.")
+
+
 def unknown_command_ack(verb: str) -> str:
     return _bot("unknown_command", "I don't know `{verb}`. Try `!mom help`.", verb=verb)
 

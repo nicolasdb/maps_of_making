@@ -106,8 +106,14 @@ There is no single fixed graph name to query — you must wildcard it and filter
   }}
 
 A space only counts as "registered"/"confirmed" (not just a seeded directory
-listing) if it has a mom:endpointUrl. Add `?s mom:endpointUrl ?e .` to the
-graph pattern when the question implies a real, live space, not a stub listing.
+listing) if it has a mom:endpointUrl. Make that triple OPTIONAL and bind a
+?confirmed flag with BOUND() rather than requiring it — this way a single
+query surfaces BOTH confirmed spaces AND unconfirmed/seeded ones that also
+match, instead of silently hiding the unconfirmed ones. The caller needs both
+counts: it reports confirmed matches with confidence, but must not go quiet
+about unconfirmed data that exists — that's a real nudge signal for
+coordinators to register. Never drop the OPTIONAL/BOUND pattern just because
+the question sounds like it wants only "real" spaces.
 
 Boolean fields (e.g. mom:openNow) are typed literals — match them as a typed
 literal in the triple, not a bare comparison:
@@ -117,14 +123,15 @@ literal in the triple, not a bare comparison:
 
 Worked example (city + open state — adapt the FILTER/city string to the question):
 
-  SELECT ?name ?city ?website WHERE {{
+  SELECT ?name ?city ?website ?confirmed WHERE {{
     GRAPH ?g {{
       ?s a mom:Space ;
          schema:name ?name ;
-         mom:openNow "true"^^xsd:boolean ;
-         mom:endpointUrl ?e .
+         mom:openNow "true"^^xsd:boolean .
       OPTIONAL {{ ?s schema:addressLocality ?city }}
       OPTIONAL {{ ?s schema:url ?website }}
+      OPTIONAL {{ ?s mom:endpointUrl ?e }}
+      BIND(BOUND(?e) AS ?confirmed)
       FILTER(STRSTARTS(STR(?g), "urn:mak:space/"))
       FILTER(CONTAINS(LCASE(STR(?city)), LCASE("berlin")))
     }}
@@ -132,14 +139,15 @@ Worked example (city + open state — adapt the FILTER/city string to the questi
 
 Worked example (tag/specialty + city):
 
-  SELECT ?name ?city ?website WHERE {{
+  SELECT ?name ?city ?website ?confirmed WHERE {{
     GRAPH ?g {{
       ?s a mom:Space ;
          schema:name ?name ;
-         schema:knowsAbout ?specialty ;
-         mom:endpointUrl ?e .
+         schema:knowsAbout ?specialty .
       OPTIONAL {{ ?s schema:addressLocality ?city }}
       OPTIONAL {{ ?s schema:url ?website }}
+      OPTIONAL {{ ?s mom:endpointUrl ?e }}
+      BIND(BOUND(?e) AS ?confirmed)
       FILTER(STRSTARTS(STR(?g), "urn:mak:space/"))
       FILTER(CONTAINS(LCASE(STR(?specialty)), LCASE("laser")))
       FILTER(CONTAINS(LCASE(STR(?city)), LCASE("ghent")))

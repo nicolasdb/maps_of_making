@@ -123,6 +123,9 @@ services:
       - ./link_handler/bot_keys.py:/app/bot/bot_keys.py:ro
       - ../data/bot-keys:/app/bot-keys:ro
       - ../data/bot-repos:/app/bot-repos
+      # capability_gaps.db / fuzzy_questions.db — was unmounted (ephemeral
+      # container fs), so every redeploy silently wiped all logged gaps.
+      - ../data/bot-tasks:/app/tasks
     environment:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - OXIGRAPH_ENDPOINT=http://oxigraph:7878

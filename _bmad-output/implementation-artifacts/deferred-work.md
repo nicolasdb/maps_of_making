@@ -1,5 +1,93 @@
 # Deferred Work
 
+## Deferred from: `!mom gaps` live testing (2026-07-03)
+
+### `log_gap` is pure LLM self-report — no code-level backstop, real misses confirmed live
+
+While testing the newly-shipped `!mom gaps` read command (empty by design right after
+deploy — `/app/tasks` volume was just fixed to persist across redeploys), tried to
+generate a gap live and found the logging itself is unreliable, not just the storage.
+
+**Current mechanism:** `log_gap` (`agent_tools.py`) fires ONLY when the model chooses to
+call the tool, per `bernard_agent_prompt.py` rules 4 (capability gap) / 5 (ontology gap).
+No code in `agent.py` force-logs a gap on any condition — no threshold, no auto-trigger
+on an empty/failed tool result. Separate `fuzzy_questions.db` analytics table
+(`log_fuzzy_question`) only fires when `router.route()` classifies intent as `"unknown"`
+(`router.py:34-35`); `query`/`nl_discovery`-classified messages are explicitly excluded
+from it too (`router.py:37-45`).
+
+**Live proof, two real gap-shaped questions, neither logged anywhere:**
+- "Bernard: how many spaces in Berlin I could visit this week-end if it rains?" —
+  Bernard's own reply said "I cannot factor in weather forecasts" (textbook rule-4
+  capability gap) but never called `log_gap`.
+- "Bernard: which space in Brussels shared partnership on european project?" — no
+  ontology term for "partnership"/"funded" (rule-5 ontology gap); Bernard just said "no
+  space matches," indistinguishable from a genuine zero-result query.
+
+Both likely classified as `query`/`nl_discovery` intent (not `unknown`), so neither
+`capability_gaps.db` nor `fuzzy_questions.db` recorded them — the roadmap signal
+`log_gap` exists to collect is silently lost for exactly the cases that matter.
+
+**Options for a future story (not built, needs a decision, not just an implementation):**
+1. Strengthen/re-example rules 4/5 in `bernard_agent_prompt.py` — cheapest, but prompt-only
+   compliance already failed once this session (mention-detection bare-name attempt) and
+   may fail again the same way.
+2. Code backstop in `agent.py`: after the tool loop, if no tool call returned real
+   data-bearing results (or `query_sparql` returned `count=0`) and `log_gap` was never
+   called, auto-log a gap with a heuristically-guessed `gap_kind`. Deterministic, catches
+   every miss, but blunter — can't distinguish "genuinely zero real matches" from "model
+   should have flagged this as unsupported" as well as the model itself can.
+3. Widen `fuzzy_questions` logging to cover every `agent.run()` call (not just
+   `fuzzy=True`), so the "resolved" analytics counter isn't blind to
+   `query`/`nl_discovery`-classified misses even before touching `log_gap` itself.
+→ New story. `!mom gaps` (just shipped) is the read-side fix; this is the write-side
+reliability gap underneath it — worth fixing before relying on gap data as a real
+roadmap signal.
+
+## Deferred from: Story 6.11 AC#10 live verification (2026-07-03)
+
+### City search matches literal `addressLocality` string, not metro-area geography
+
+Surfaced while cross-checking Bernard's `query_sparql` answers against live Oxigraph
+for "which spaces near Ghent have laser cutters". Bernard correctly answered "no
+confirmed spaces, but 1 unconfirmed (Timelab) matches" — but the map's own Find UI
+search box for "ghent" also only returns 2 spaces (Zeus WPI, Timelab), while the map
+visibly shows many more dots clustered right around Ghent. **Ingegno Maker Space**
+(laser-tagged, real coords 51.0503,3.6572 — ~5km from Ghent center, `geolocationFidelity:
+"high"`) is invisible to both searches.
+
+**Root cause, live-verified via direct Oxigraph query on Ingegno's graph
+(`urn:mak:space/ingegno-maker-space-drongen`):** `schema:addressLocality "Drongen"`.
+Drongen is a real deelgemeente (merged sub-municipality) of Ghent since a 1977
+municipal merger — administratively part of Ghent, but keeps its own official postal
+locality name (postcode 9031). **The data is correct, not corrupted.**
+
+Both the web Find UI (`web/app.js` `filteredSpaces()`, `hay.includes(q)` against
+`s.city`) and Bernard's generated SPARQL (`CONTAINS(LCASE(STR(?city)), LCASE("ghent"))`,
+from `nl_to_sparql.py`'s worked examples) do a plain substring match on the literal
+locality string — neither has any concept of metro-area/administrative hierarchy or a
+geo-radius fallback. Any big city with annexed districts carrying distinct locality
+names hits this: Brussels (Ixelles, Schaerbeek, Anderlecht, Uccle…), Cologne, Paris
+(arrondissements/suburb communes). `!mom nearby`/`!mom travel` already use real
+geo-radius (bbox/ORS) and do NOT have this problem — only `find`/`network`-shaped city
+filters and the web Find text box are affected.
+
+**Scope for a future story:**
+- Replace/augment substring city match with geocoded-radius matching (reuse the
+  geocoding already built for `!mom nearby`/`travel`) in both `web/app.js`'s filter
+  and `nl_to_sparql.py`'s SPARQL generation guidance.
+- Needs a city→lat/lon resolution step before filtering — either live-geocode the
+  search term (cost/latency) or maintain a small locality-alias table (Drongen→Ghent,
+  Ixelles→Brussels, etc.) as a stopgap.
+- Audit how many spaces across the dataset have a distinct-from-parent-city locality
+  within known metro areas before choosing alias-table vs. live-geocode.
+- Related but distinct from the older VOW/fabtafle profile-URL-as-endpoint deferral
+  below — that's about a wrong field value (profile page mistaken for a fetchable
+  endpoint); this is about a correct field value being too fine-grained for a
+  city-name substring search. Don't conflate the two fixes.
+→ New story, not folded into 6.11 (which already closed AC#10 with the endpointUrl-
+confirmed-vs-seeded distinction verified correct against live data).
+
 ## Deferred from: @bernard write-path testing (2026-06-24)
 
 ### ORPHANED: NL→write slot-filling (the `write` intent has no handler)

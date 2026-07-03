@@ -61,6 +61,8 @@ bot:
   did_you_mean: "There's no `{verb}`. Did you mean `!mom {suggestion}`?"
   unknown_command: "I don't know `{verb}`. Try `!mom help`."
   result_cap_note: "Showing first {n} — use `!mom find` with a tag and city to narrow down."
+  gaps_report: "Last {count} logged gap(s):\n{list}"
+  gaps_empty: "No gaps logged yet."
   # @bernard mention stub (NL deferred to 6.4)
   bernard_nl_stub: "Natural-language questions are on the roadmap. For now: `!mom help` lists what I can do."
 

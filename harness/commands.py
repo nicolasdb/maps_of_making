@@ -35,6 +35,7 @@ COMMAND_REGISTRY = {
     "update":  (100, "Update a field in this space's JSON", "{field} {value}"),
     "open":    (100, "Mark this space as open", ""),
     "close":   (100, "Mark this space as closed", ""),
+    "gaps":    (100, "List recently logged capability/ontology gaps", "[N]"),
 }
 KNOWN_VERBS = frozenset(COMMAND_REGISTRY)
 
@@ -250,6 +251,14 @@ async def try_handle(text: str, user_id: str, room_id: str, session_id: str, *, 
         if not m:
             return "Usage: `!mom travel {origin} {hours}h` (e.g. `2h` or `30min`, optional `by bike`/`by foot`)"
         return await _handle_travel(m.group("origin").strip(), m.group("time").strip(), room_id, bound)
+
+    if verb == "gaps":
+        if power_level < 100:
+            return bernard.read_only_ack(user_id)
+        limit = 10
+        if len(parts) >= 2 and parts[1].strip().isdigit():
+            limit = int(parts[1].strip())
+        return _handle_gaps(limit)
 
     # Fuzzy-suggest before falling through to LLM classifier
     if verb in KNOWN_VERBS:
@@ -504,3 +513,17 @@ async def _handle_travel(origin: str, hours_and_mode: str, room_id: str, bound) 
     if len(confirmed) >= 15:
         result_text += "\n" + bernard.result_cap_note_ack(n=15)
     return result_text
+
+
+def _handle_gaps(limit: int) -> str:
+    # Lazy import: agent_tools imports commands at module load, so importing
+    # it at the top of this file would be circular.
+    import agent_tools
+    rows = agent_tools.read_recent_gaps(limit)
+    if not rows:
+        return bernard.gaps_empty_ack()
+    list_text = "\n".join(
+        f"• [{r['gap_kind']}] {r['raw_request']} — {r['note']} ({r['timestamp']})"
+        for r in rows
+    )
+    return bernard.gaps_report(count=len(rows), list_text=list_text)
