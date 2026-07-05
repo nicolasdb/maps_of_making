@@ -116,12 +116,12 @@ async def main() -> None:
     llm_client.MODEL = bot_cfg.get("model") or llm_client.DEFAULT_MODEL
     bernard.load_voice()
 
-    homeserver = os.environ.get("MATRIX_HOMESERVER") or bot_cfg.get("matrix_homeserver")
-    user_id = os.environ.get("MATRIX_USER_ID")
-    access_token = os.environ.get("MATRIX_ACCESS_TOKEN")
-    device_id = os.environ.get("MATRIX_DEVICE_ID") or None
+    homeserver = os.environ.get("BERNARD_MATRIX_HOMESERVER") or bot_cfg.get("matrix_homeserver")
+    user_id = os.environ.get("BERNARD_MATRIX_USER_ID")
+    access_token = os.environ.get("BERNARD_MATRIX_ACCESS_TOKEN")
+    device_id = os.environ.get("BERNARD_MATRIX_DEVICE_ID") or None
     if not (homeserver and user_id and access_token):
-        raise ValueError("MATRIX_HOMESERVER/MATRIX_USER_ID/MATRIX_ACCESS_TOKEN must be set in .env or environment")
+        raise ValueError("BERNARD_MATRIX_HOMESERVER/BERNARD_MATRIX_USER_ID/BERNARD_MATRIX_ACCESS_TOKEN must be set in .env or environment")
 
     sparql_client.OXIGRAPH_ENDPOINT = os.environ.get("OXIGRAPH_ENDPOINT", "http://localhost:7878")
 

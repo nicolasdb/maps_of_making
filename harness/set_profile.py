@@ -1,7 +1,7 @@
 """One-off: set Bernard's Matrix display name + avatar.
 
-Reuses the same env vars as main_matrix.py (MATRIX_HOMESERVER / MATRIX_USER_ID /
-MATRIX_ACCESS_TOKEN). Idempotent — safe to re-run after swapping the image.
+Reuses the same env vars as main_matrix.py (BERNARD_MATRIX_HOMESERVER / BERNARD_MATRIX_USER_ID /
+BERNARD_MATRIX_ACCESS_TOKEN). Idempotent — safe to re-run after swapping the image.
 
     python harness/set_profile.py
     python harness/set_profile.py --avatar web/mothersands/bernard_front_mug.png \
@@ -26,11 +26,11 @@ async def main() -> int:
     ap.add_argument("--name", default=DEFAULT_NAME)
     args = ap.parse_args()
 
-    homeserver = os.environ.get("MATRIX_HOMESERVER")
-    user_id = os.environ.get("MATRIX_USER_ID")
-    access_token = os.environ.get("MATRIX_ACCESS_TOKEN")
+    homeserver = os.environ.get("BERNARD_MATRIX_HOMESERVER")
+    user_id = os.environ.get("BERNARD_MATRIX_USER_ID")
+    access_token = os.environ.get("BERNARD_MATRIX_ACCESS_TOKEN")
     if not (homeserver and user_id and access_token):
-        print("MATRIX_HOMESERVER/MATRIX_USER_ID/MATRIX_ACCESS_TOKEN must be set", file=sys.stderr)
+        print("BERNARD_MATRIX_HOMESERVER/BERNARD_MATRIX_USER_ID/BERNARD_MATRIX_ACCESS_TOKEN must be set", file=sys.stderr)
         return 1
 
     avatar = Path(args.avatar)
