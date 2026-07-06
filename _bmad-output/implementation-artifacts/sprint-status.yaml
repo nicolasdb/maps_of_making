@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-01
-last_updated: "2026-07-06 (Epic 6 retrospective done — epic-6-retro-2026-07-06.md; build-vs-buy lesson: harness=right prototype/wrong product, pivot to hermes agent-plane earned; 6-6/6-8 dispositioned superseded-pending epic-13, 6-7 folds into Epic 13 twin-account; ADR-018 + Epic 13 to be drafted)"
+last_updated: "2026-07-06 (Story 13.1 created — 13-1-parametrize-graph-endpoint-shared-oxigraph-skill.md ready-for-dev; epic-13 in-progress; implementation lives in sibling hermes repo, cross-repo pattern noted in story)"
 project: maps_of_making
 project_key: NOKEY
 tracking_system: file-system
@@ -241,8 +241,8 @@ development_status:
 
   # Epic 13: Agent Plane — Bernardo on Hermes (ADR-018; migration+parity; twin-until-parity)
   # Added 2026-07-06 from Epic 6 retro. @bernardo:mapsofmaking.org registered. Freeze harness Bernard as parity benchmark.
-  epic-13: backlog
-  13-1-parametrize-graph-endpoint-shared-oxigraph-skill: backlog
+  epic-13: in-progress
+  13-1-parametrize-graph-endpoint-shared-oxigraph-skill: ready-for-dev
   13-2-bernardo-profile-scaffold-read-parity-mom-data-plane: backlog
   13-3-persona-voice-port-bernard-yaml-to-hermes: backlog
   13-4-tool-parity-find-read-gaps-fabrication-backstop: backlog
