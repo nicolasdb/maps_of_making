@@ -526,6 +526,50 @@ write command → permission check (Matrix power level) → git_ops.patch_json (
 
 ---
 
+### ADR-018: Agent Plane / Data Plane Split — Bernardo on Hermes, Endpoint-as-Contract
+
+> **Added 2026-07-06** (Winston architecture session + Epic 6 retrospective, `epic-6-retro-2026-07-06.md`). **Supersedes the runtime half of ADR-017**: the custom `harness/` runtime is retired as the *product* agent runtime (kept frozen as the parity benchmark). ADR-017's *behaviour* contracts (Bernard voice, deploy-key write path, confirm-by-construction, IoP-guarded NL→SPARQL, read-only-on-Oxigraph) are **carried forward unchanged** — only the runtime that hosts them moves.
+
+**Context — the build-vs-buy finding.** Epic 6 built `harness/` from scratch and hit wall after wall: channel adapters (6-6), E2EE rooms (6-8), durable multi-turn state (flagged in 6-9 as the one thing a framework buys), thread anchoring, mention-detection fragmentation. Every one of these is solved-for-free in [NousResearch Hermes](https://hermes-agent.nousresearch.com/) — a self-hostable agent runtime with profile-per-bot, one gateway across 20+ platforms (incl. Matrix/mautrix with working E2EE), memory, skills, cron. `harness/` was the *right prototype* (it taught Matrix/E2EE/tool-calling from the inside, which is why hermes can now be adopted deliberately rather than cargo-culted) but the *wrong product*. Rule of Three / boring-technology: custom-build the differentiator (the MoM data plane — freshness, ontology, heartbeat), adopt boring infra for the commodity (the agent runtime).
+
+**Decision — two planes, never merged, one contract between them.**
+
+```
+DATA PLANE (per community; boring, stable, the differentiator)
+  oxigraph + pipeline + link_handler + web  →  exposes: SPARQL endpoint URL + vocabulary
+        ▲ HTTP (SPARQL over the compose network or a public/bridged URL)
+AGENT PLANE (hermes; evolves fast, commodity runtime)
+  gateway + profile-per-bot (bernardo→MoM, bianca→OpenFab, manny→dev-guardian)
+  each profile = persona + skills + env
+```
+
+- **The contract is a SPARQL endpoint URL + a vocabulary.** Nothing else crosses the seam. Boring, inspectable, swappable.
+- **Endpoint is per-profile env, not baked in a skill.** The shared `oxigraph-query` skill currently hardcodes `http://oxigraph:7878` — the landmine. It must read `GRAPH_ENDPOINT` from `profiles/<bot>/.env`. Then bianca→OpenFab store, bernardo→MoM store, same shared skill via the symlink pattern. **This is the enabling change** (Epic 13 Story 13.1).
+- **Archetype = persona + skills + env.** A white-label clone = copy a profile dir, swap env (endpoint) + persona + ontology cartridge. This is the *agent-plane* counterpart to Epic 10 (data-plane bundles) and Epic 11 (crosswalk cartridges); it reuses, not reinvents, the managed-hosting monetization already seeded there.
+- **Bernardo, not Bernard.** `@bernardo:mapsofmaking.org` (registered 2026-07-06) is a distinct Matrix account, run parallel to the harness Bernard until behavioral parity — avoids the shared-account ghost-bot hazard (Epic 6 round-5) by construction. On parity, the harness Matrix side retires; the MoM data plane (pipeline/oxigraph/link_handler/admin) is untouched.
+
+**Tenancy tiers (hybrid pattern — shared app, per-tenant data, 2026 SaaS consensus):**
+| Tier | Data plane | Agent plane |
+|---|---|---|
+| Self-host (sovereign) | tenant's own compose + oxigraph | tenant's own hermes, cloned archetype profile |
+| Managed (we host) | named-graph-per-tenant in one store, OR per-tenant store when regulatory (medical network = per-tenant, non-negotiable) | one hermes gateway, profile-per-tenant |
+| White-label domain | same engine + swapped ontology cartridge + palette | same archetype + swapped persona/knowledge |
+
+Domains this opens: makerspaces, repair-cafés, resourceries, myofunctional-therapy medical networks, Open Know-How, LGBT+ friendly-space referencing. Engine identical; **vocabulary + persona + palette are the tenant layer.**
+
+**Open hard problem — write auth.** Today's SPARQL write endpoint is not auth-gated; a remote agent-plane bot must not write until it is. **Direction: Solid pod + WebID.** WebID = dereferenceable identity URIs for coordinators and bots → gate writes by WebID, not shared secrets. Pod = the sovereignty tier's endpoint: a space's data lives in its own pod, MoM indexes rather than owns (consistent with the no-PII-filtering / coordinator-owns-disclosure stance). RDF-native, so oxigraph and pods speak the same Turtle. Tracked in Epic 10's "node sovereignty" concern; a prerequisite for agent-plane *writes* against remote/managed data planes (reads land first).
+
+**Rule of Three — do not build the platform yet.** Tenant #1 = bernardo→MoM. Tenant #2 = bianca→OpenFab (half-exists). Extract provisioning tooling / multi-tenant machinery only at tenant #3. Until then "archetype" is a documented profile-cloning procedure, not a product.
+
+**Consequences for the epic map:**
+- **Epic 13 (new)** owns the agent-plane migration (bernardo scaffold, endpoint parametrization, persona/tool parity, harness retirement).
+- **Epic 12's** "multi-platform adapters" sub-track is **superseded on parity** — hermes ships them natively (same reason 6-6/6-8 retire).
+- **Epic 10 / Epic 11** stay the data-plane white-label + cartridge track; Epic 13 is their agent-plane counterpart. Cross-referenced, not merged.
+
+**Trade-offs (honest):** remote SPARQL from the agent plane adds latency + the write-auth gate above; a copy-into-hermes-oxigraph option (load MoM named graphs locally) trades freshness for network simplicity and stays available as a fallback. The endpoint-as-env contract keeps that choice per-profile and reversible.
+
+---
+
 ### ADR-015: Ingestion Transformation Layer — SpaceAPI JSON → MOM JSON-LD
 
 **Decision:** Spaces publish flat SpaceAPI-compatible JSON. MOM runs an explicit transformation layer (`scripts/spaceapi_extract/`) that converts it into MOM triples before writing to Oxigraph. The raw pre-transformation payload is persisted **first**, in SQLite (`snapshot_store.db`), as the trust receipt / Zone-3 source.

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-01
-last_updated: "2026-07-03 (6-10 closed done, superseded by 6-11; 6-11 done — round 7 closed AC#10 via live Oxigraph cross-check + round-8 code review closed the remaining faq.hit-log gap live, shipped !mom gaps + gap-persistence fix + unconfirmed-results nudge, 6 review patches applied, deferred 4 findings)"
+last_updated: "2026-07-06 (Epic 6 retrospective done — epic-6-retro-2026-07-06.md; build-vs-buy lesson: harness=right prototype/wrong product, pivot to hermes agent-plane earned; 6-6/6-8 dispositioned superseded-pending epic-13, 6-7 folds into Epic 13 twin-account; ADR-018 + Epic 13 to be drafted)"
 project: maps_of_making
 project_key: NOKEY
 tracking_system: file-system
@@ -190,13 +190,13 @@ development_status:
   6-3-read-query-command-set-isochrone-tool: done  # 2026-06-18: code review complete — 7 patches applied; 63 tests passing
   6-4-nl-sparql-natural-language-iop-ontology: done  # 2026-06-24: code review complete — 7 patches applied (fence-strip, brace/tab escape, None-safe binding, count label, cache retry, empty-cache guard); 65 tests passing
   6-5-graceful-failure-bernard-voice-pass: superseded  # 2026-06-25: course-corrected — voice-table approach dissolved by tool-calling reframe; story file carries banner; successor story "Bernard as tool-calling agent" to be created
-  6-6-additional-channel-adapters-discord-telegram-mattermost: backlog
-  6-7-dev-env-separation-vps-test-stance: ready-for-dev
-  6-8-e2e-encrypted-rooms-spike: ready-for-dev
+  6-6-additional-channel-adapters-discord-telegram-mattermost: superseded-pending  # 2026-07-06 retro: hermes gateway ships 20+ platform adapters natively; flip to `superseded` once bernardo (Epic 13) proves a second adapter live — don't-cut-before-proven
+  6-7-dev-env-separation-vps-test-stance: superseded-pending  # 2026-07-06 retro: twin-account model (Epic 13 Story 13.2) IS dev/prod separation; folds into Epic 13
+  6-8-e2e-encrypted-rooms-spike: superseded-pending  # 2026-07-06 retro: hermes/mautrix does E2EE (manny/bianca run encrypted rooms today); flip to `superseded` once bernardo proves encrypted-room ops live
   6-9-bernard-tool-calling-agent-spike: done  # 2026-07-02: all 10 tasks done incl. live VPS verification (6 real issues found+fixed: model swap gemma3→gemma4, rate limit, router confirm-bypass bug, tool-error honesty, emoji variation-selector, thread fragmentation); decision record CONFIRMED — native SDK sufficient; code review found+fixed 2 patch issues (pending-write bypass firing on non-reaction msgs, propose_write clobbering in-flight pending)
   6-10-fuzzy-nl-question-routing: done  # 2026-07-03: superseded by 6-11 — nl_discovery→nl_to_sparql.dispatch() fork this story left open is exactly what 6-11 removed; AC #8 live-verification carried forward and closed under 6-11's live-debugging rounds instead
   6-11-collapse-nl-answer-paths: done  # 2026-07-03: 137 tests passing (3 pre-existing unrelated failures). Live verification rounds 1-3 fixed the core SPARQL-generation bugs (iteration budget, prompt grounding, PREFIX injection — model-agnostic). Rounds 4-6 surfaced+fixed 3 unrelated live bugs: !mom travel multi-word origin + hardcoded fallback speed, thread-duplication traced to a shared-Matrix-account ghost bot process (not Matrix/Element), @bernard mention detection missing formatted_body-pill clients + new trigger-suppression inside code/quotes. Round 7 closed AC #10: Ghent/Brussels laser-cutter query cross-checked directly against live Oxigraph, confirmed/unconfirmed distinction verified correct; also fixed nl_to_sparql hard-filtering out unconfirmed matches (now OPTIONAL+BOUND flag + agent prompt rule 3a nudges on unconfirmed results), shipped !mom gaps (log_gap was write-only) + fixed a real data-loss bug (/app/tasks had no volume mount, wiping gap data on every redeploy). Two new findings deferred, not fixed: city-search locality-granularity gap (annexed-district localities invisible to substring search), log_gap self-report reliability gap (model doesn't always call the tool, no code backstop) — both logged in deferred-work.md as new stories. iop:Makerspace ontology gap still deferred (project_ontology_space_type_gap).
-  epic-6-retrospective: optional
+  epic-6-retrospective: done  # 2026-07-06: epic-6-retro-2026-07-06.md
 
   # Epic 7: 🟢 "Open Now" Presence Layer (parked indefinitely — 2026-05-06)
   epic-7: backlog
@@ -238,3 +238,13 @@ development_status:
   # Renamed from Epic 9 (2026-05-29). Depends on Story 3.5 (core.ttl, crosswalk.csv, ADR-016).
   epic-10: backlog
   epic-10-retrospective: optional
+
+  # Epic 13: Agent Plane — Bernardo on Hermes (ADR-018; migration+parity; twin-until-parity)
+  # Added 2026-07-06 from Epic 6 retro. @bernardo:mapsofmaking.org registered. Freeze harness Bernard as parity benchmark.
+  epic-13: backlog
+  13-1-parametrize-graph-endpoint-shared-oxigraph-skill: backlog
+  13-2-bernardo-profile-scaffold-read-parity-mom-data-plane: backlog
+  13-3-persona-voice-port-bernard-yaml-to-hermes: backlog
+  13-4-tool-parity-find-read-gaps-fabrication-backstop: backlog
+  13-5-parity-eval-harness-matrix-retirement: backlog
+  epic-13-retrospective: optional

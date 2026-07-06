@@ -2329,6 +2329,8 @@ Story 3.5 ships `core.ttl` + `crosswalk.csv` — the static foundation of the th
 
 **Open product concerns carried here:** managed hosting *and* managed-ontology as monetization lanes (Phase 3+ product brief); Solid-pod direction for node sovereignty; governance of concept promotion (local → commons).
 
+> **Update 2026-07-06 (agent-plane counterpart):** this epic is the **data-plane** white-label track (bundles, cartridges, ontology layers). Its **agent-plane counterpart is Epic 13** (Bernardo on Hermes — cloneable bot archetype = profile + env + persona). The archetype and the bundle are the same white-label unit seen from two planes (ADR-018). The **Solid-pod / WebID** direction noted above is now also the intended **write-auth mechanism** for agent-plane writes against remote/managed data planes — a shared prerequisite, tracked here.
+
 **Depends on:** Story 3.5 (`core.ttl`, `crosswalk.csv`, ADR-016). Parallel to Epics 5–8. Not demo-blocking.
 
 > **Update 2026-06-19:** the OKW/IoP-Alliance partnership (see Epic 11) makes this epic's "crosswalk cartridge" vision concrete — OKW is the first real cartridge, OSLO (Flemish education) a likely second. The parenthetical above ("OKH/IoP Alliance — Internet of Production, distinct from the repo's `iop:` Internet of Places") is **resolved**: IoP = Internet of Production Alliance, the repo will map *toward* OKW rather than mint homegrown equipment terms.
@@ -2371,3 +2373,38 @@ So that discovery isn't locked to Matrix.
 - **ext_* feature surface** — the API + crosswalk cartridges (Epic 11) together open the "marketplace of features on new `ext_*` field sets." **Do NOT seed a plugin-execution/marketplace epic yet** — that needs a reasoner + schema registry + trust model; build only after a schema registry has real adoption data. Schema extensibility (add `ext_foo`) ≠ behavioral extensibility (auto-generated commands/cards).
 
 **Depends on:** Epic 6 (Bernard core), the `harness/` import-boundary cleanup. Parallel, post-demo, non-blocking.
+
+> **Update 2026-07-06 (Epic 13 supersession):** the "Multi-platform adapters" sub-track above is **superseded on parity by Epic 13** — the Hermes runtime ships 20+ platform adapters (incl. Discord/Telegram/Matrix) natively, so `PlatformAdapter`-on-`harness/` is not built by hand. The `harness/` import-boundary cleanup this sub-track required is moot once the harness Matrix side retires. The **Query API** and **ext_\* feature surface** sub-tracks survive (still demand-gated) but re-home onto the hermes agent plane rather than importing `harness/` core.
+
+---
+
+## Epic 13: Agent Plane — Bernardo on Hermes *(parallel, non-blocking; twin-until-parity; 2026-07-06)*
+
+> **Added 2026-07-06** from the Winston architecture session + Epic 6 retrospective (`epic-6-retro-2026-07-06.md`). Governed by **ADR-018** (agent-plane / data-plane split, endpoint-as-contract, WebID direction). This is a **migration + parity** epic, not greenfield.
+
+As the MoM operator (and future white-label host),
+I want Bernard's behaviour to run on the Hermes agent runtime as a swappable profile pointed at MoM's data plane via a SPARQL-endpoint contract,
+So that we stop maintaining a bespoke bot runtime, gain E2EE/multi-platform/durable-state for free, and get a cloneable bot archetype communities can self-host or we can host per-tenant.
+
+**The finding driving this epic (retro):** Epic 6's custom `harness/` was the right *prototype* (it taught Matrix/E2EE/tool-calling from the inside) but the wrong *product* — every hard 6.x problem (channel adapters 6-6, E2EE 6-8, durable multi-turn state flagged in 6-9) is solved-for-free in Hermes. Custom-build the differentiator (MoM data plane: freshness/ontology/heartbeat), adopt boring infra for the commodity (agent runtime).
+
+**The contract (ADR-018):** two planes, one seam = a SPARQL endpoint URL + vocabulary. Agent-plane bots are Hermes profiles = **persona + skills + env**. The endpoint lives in `profiles/<bot>/.env` (`GRAPH_ENDPOINT`), never hardcoded in a skill. Archetype clone = copy profile dir, swap env + persona + ontology cartridge (data-plane counterpart = Epics 10/11).
+
+**Discipline carried from Epic 6 retro:**
+- **Twin-until-parity, then explicit retirement.** `@bernardo:mapsofmaking.org` (registered 2026-07-06) runs parallel to harness Bernard on a *distinct* account (no shared-account ghost-bot, per 6-11 round 5). Freeze Bernard-on-harness as the parity benchmark — do NOT modify it during this epic. Retire the harness Matrix side only after Story 13.5 confirms parity. **Enforce supersession at build time** (the 6-4/6-9 `nl_to_sparql`/`agent.py` drift lesson).
+- **Live verification is the DoD.** Green tests ≠ working bot (Epic 6's defining lesson). Every story's done-gate is a live Matrix run, not a passing suite.
+
+**Story sketch (sequence; each demand/parity-gated):**
+
+- **Story 13.1 — Parametrize the graph endpoint (the enabling change).** Shared `oxigraph-query` skill reads `GRAPH_ENDPOINT` from profile env instead of hardcoded `http://oxigraph:7878`. bianca→OpenFab store, bernardo→MoM store, same shared skill via the symlink pattern. *Done gate: bianca and a scratch profile hit different stores live with one shared skill.*
+- **Story 13.2 — Bernardo profile scaffold + read parity against MoM's data plane.** Scaffold `profiles/bernardo/` (`.env` with `@bernardo` creds + `GRAPH_ENDPOINT`→MoM oxigraph, `config.yaml` persona=bernardo, matrix store, E2EE on). Read-only first. **Absorbs 6-7** (twin-account IS dev/prod separation). *Done gate: bernardo answers a discovery question in an encrypted Matrix room, cross-checked against MoM Oxigraph ground truth (the 6-11 AC#10 bar).*
+- **Story 13.3 — Persona / voice port.** `bernard_voice.yaml` → hermes persona (SOUL.md / config personality). Resolve the copy-SSOT question (bernard_voice.yaml is SSOT — port, don't fork). *Done gate: side-by-side voice A/B vs frozen harness Bernard reads as the same character.*
+- **Story 13.4 — Tool parity: find / read / gaps.** Port the read/discovery tool surface (find, nearby, network, isochrone, read_space, log_gap, IoP-guarded NL→SPARQL) as hermes skills/tools against `GRAPH_ENDPOINT`. **Carries the Epic 6 fabrication-backstop debt** — add a code-level guard (not prompt-only) for the LLM-fabricates-over-failure class (4 recurrences in Epic 6). Write path is LAST and **blocked on write-auth** (→ WebID/Solid, ADR-018 + Epic 10). *Done gate: discovery parity live; write explicitly deferred until auth lands.*
+- **Story 13.5 — Parity evaluation + harness Matrix retirement.** Behavioral parity checklist against frozen Bernard-on-harness (built from Epic 6 done-notes = what Bernard actually does). On pass: stop the mom-harness Matrix runtime, keep MoM data plane (pipeline/oxigraph/link_handler/admin) untouched. Flip Epic 6 `6-6`/`6-8` from `superseded-pending` → `superseded`. *Done gate: operator confirms bernardo is the sole @-bot answering MoM discovery + writes (once auth), harness Matrix side down, no capability regression.*
+
+**Explicitly deferred / out of scope:**
+- **Multi-tenant provisioning tooling** — Rule of Three: bernardo=tenant #1, bianca=tenant #2; extract tooling only at tenant #3. "Archetype" here = a documented profile-cloning procedure, not a platform.
+- **Write-auth mechanism (WebID/Solid pod)** — its own track (Epic 10 node-sovereignty concern); Epic 13 lands reads, defers writes-against-remote-data-plane until it exists.
+- **`networks/*.yaml` manifest system, persona packs, marketplace** — same trap flagged in 6-11; not this epic.
+
+**Depends on:** Epic 6 (frozen as parity benchmark), Hermes runtime (live locally — manny/bianca profiles exist), MoM data plane (Epic 3.5 freshness contract, oxigraph reachable). **Blocks nothing** — parallel, post-demo. **Cross-ref:** ADR-018; Epic 10 (data-plane white-label + WebID sovereignty); Epic 11 (crosswalk cartridges = the vocabulary layer of the archetype); Epic 12 (adapter sub-track superseded here).
