@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-01
-last_updated: "2026-07-07 (Story 13.1 → done — code review closed: fallback removed, .env parsing hardened (export/empty/comment/CRLF/trailing-slash/duplicate-line), scratch SOUL.md test-parity banner added, AC2 text corrected; live done-gate passed: bianca→OpenFab store, scratch→scratch-oxigraph store, same shared SKILL.md; impl in sibling hermes repo, uncommitted pending approval)"
+last_updated: "2026-07-07 (Epic 9 retro closed: epic-9 → done, 9-11 deferred to backlog not blocking, see epic-9-retro-2026-07-07.md. Prior: Story 13.1 → done — code review closed: fallback removed, .env parsing hardened (export/empty/comment/CRLF/trailing-slash/duplicate-line), scratch SOUL.md test-parity banner added, AC2 text corrected; live done-gate passed: bianca→OpenFab store, scratch→scratch-oxigraph store, same shared SKILL.md; impl in sibling hermes repo, uncommitted pending approval)"
 project: maps_of_making
 project_key: NOKEY
 tracking_system: file-system
@@ -223,7 +223,7 @@ development_status:
   #   affordance) and MUST inherit the 9.12 locked interaction+visual frame (story Final decision
   #   record). 9.6's story file predates the 9.12 lock (written 05-30) — REFRESH it against the
   #   9.12 frame before dev when it is resumed.
-  epic-9: in-progress
+  epic-9: done  # 2026-07-07: retro closed epic — 9-11 formally deferred to backlog, not blocking
   9-1-subdomain-infra-genjson-mapsofmaking-org-dns-nginx-static-scaffold: done
   9-2-drawer-ux-on-mom-map-bernard-one-liner-url-input-cta: done
   9-3-wizard-core-tiers-0-1-name-address-spaceapi-v15-core-localstorage-export: done  # 9.4 merged in (geocode proxy) — one demoable vertical slice
@@ -236,7 +236,7 @@ development_status:
   9-10-wizard-tier-3-ext-fab-fields-space-type-fuzzy-dropdown-equipment: superseded  # 2026-06-16: absorbed by Epic 6.2 write skillset
   9-11-validator-error-ux-inline-per-field-summary-report: backlog  # M3 — deferrable
   9-12-wizard-visual-design-pass-color-layout-contrast: done  # operator-approved; locks the interaction+visual frame 9.6/9.10 inherit (see story Final decision record)
-  epic-9-retrospective: optional
+  epic-9-retrospective: done  # 2026-07-07: see epic-9-retro-2026-07-07.md
 
   # Epic 10: Multi-Network Schema — Bundles, Concept Commons & Emergent Ontologies (stub — no stories yet)
   # Renamed from Epic 9 (2026-05-29). Depends on Story 3.5 (core.ttl, crosswalk.csv, ADR-016).
