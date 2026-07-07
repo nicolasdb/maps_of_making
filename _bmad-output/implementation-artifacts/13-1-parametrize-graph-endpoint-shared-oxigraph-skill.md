@@ -1,6 +1,6 @@
 # Story 13.1: Parametrize the Graph Endpoint (shared oxigraph-query skill)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -11,10 +11,7 @@ so that one shared skill can serve bianca→OpenFab store and bernardo→MoM sto
 ## Acceptance Criteria
 
 1. **Env propagation verified first (spike gate).** It is confirmed, by a live test inside the running hermes container, whether a variable set in `profiles/<bot>/.env` (e.g. `GRAPH_ENDPOINT=...`) is visible in the terminal-toolset shell where the agent runs `curl`. The finding (yes/no + mechanism) is recorded in this story's Completion Notes. If NOT propagated, the fallback resolution mechanism in AC2 is used and documented in the skill.
-2. **Skill reads `GRAPH_ENDPOINT`, never a hardcoded host.** `hermes-data/shared/skills/oxigraph-query/SKILL.md` instructs the agent to resolve the endpoint base URL in this order:
-   - `$GRAPH_ENDPOINT` from the environment, if hermes propagates profile env (AC1 finding);
-   - otherwise read `GRAPH_ENDPOINT=` from `/opt/data/profiles/<active-profile>/.env` (active profile name is in `/opt/data/active_profile`);
-   - if neither yields a value, **STOP and tell the user `GRAPH_ENDPOINT` is unset for this profile** — no hardcoded default, no silent fallback, no guessed endpoint. The skill must never query a store the profile didn't explicitly configure (ADR-018: endpoint is per-profile env, never baked in the skill).
+2. **Skill reads `GRAPH_ENDPOINT`, never a hardcoded host.** `hermes-data/shared/skills/oxigraph-query/SKILL.md` instructs the agent to resolve the endpoint base URL by reading `GRAPH_ENDPOINT=` from `$HERMES_HOME/.env` (the *running session's* profile directory, confirmed propagated to the toolset shell — AC1 finding; `$HERMES_HOME` replaces the originally-planned `/opt/data/active_profile` marker, which is a sticky default and not necessarily the running profile). There is **no fallback resolution path** — `/opt/data/active_profile` is never consulted for this lookup (a fallback onto it would reproduce the exact silent-wrong-store bug this story fixes, per code review 2026-07-07). If `GRAPH_ENDPOINT` is absent, commented out, or present-but-empty, **STOP and tell the user `GRAPH_ENDPOINT` is unset for this profile** — no hardcoded default, no silent fallback, no guessed endpoint. The skill must never query a store the profile didn't explicitly configure (ADR-018: endpoint is per-profile env, never baked in the skill).
    All four endpoint URLs in the skill (`/query`, `/update`, `/store?default`, and the curl import example) are expressed relative to the resolved base (e.g. `${GRAPH_ENDPOINT}/query`).
 3. **`GRAPH_ENDPOINT` set in bianca's profile env.** `profiles/bianca/.env` gains `GRAPH_ENDPOINT=http://oxigraph:7878` (explicit, even though it matches the old default). manny's profile gets the same line (it also symlinks the skill).
 4. **Scratch profile hits a different store.** A scratch/test profile exists with the same shared-skill symlink and a `GRAPH_ENDPOINT` pointing at a *different* SPARQL store (see Dev Notes for the second-store options). Given the same skill file, the scratch profile's queries land on the second store, not OpenFab's.
@@ -48,6 +45,20 @@ so that one shared skill can serve bianca→OpenFab store and bernardo→MoM sto
 - [x] Task 6: Documentation (AC: 2)
   - [x] Added "Variables d'environnement par-profile (contrat ADR-018)" section to `references/shared-skills-pattern.md`
   - [x] Recorded env-propagation finding + second-store choice below for 13.2
+
+## Review Findings
+
+- [x] [Review][Patch] Remove `/opt/data/active_profile` fallback entirely from SKILL.md's resolution order — `$HERMES_HOME/.env` only, STOP if absent (decision: no escape hatch, matches ADR-018 anti-guess principle strictly) [hermes/hermes-data/shared/skills/oxigraph-query/SKILL.md]
+- [x] [Review][Patch] Add explicit header note to scratch profile's SOUL.md marking it as copied from Bianca for test parity only, not a real persona (decision: cheapest fix, scratch is infra not a bot) [hermes/hermes-data/profiles/scratch/SOUL.md]
+- [x] [Review][Patch] Empty-but-present `GRAPH_ENDPOINT=` line vs missing line both silently yield empty string; STOP branch never mechanically triggered [hermes/hermes-data/shared/skills/oxigraph-query/SKILL.md]
+- [x] [Review][Patch] `export GRAPH_ENDPOINT=...` syntax not matched by anchored grep → false-negative STOP for a validly configured profile [hermes/hermes-data/shared/skills/oxigraph-query/SKILL.md]
+- [x] [Review][Patch] No trimming of inline comments / CRLF from `.env` value → malformed URL passed to curl [hermes/hermes-data/shared/skills/oxigraph-query/SKILL.md]
+- [x] [Review][Patch] No trailing-slash normalization on `GRAPH_ENDPOINT` → double-slash in `${GRAPH_ENDPOINT}/query` [hermes/hermes-data/shared/skills/oxigraph-query/SKILL.md]
+- [x] [Review][Patch] Duplicate `GRAPH_ENDPOINT=` lines silently resolved via `tail -1`, no warning [hermes/hermes-data/shared/skills/oxigraph-query/SKILL.md]
+- [x] [Review][Patch] Story AC2 text still describes the old ($GRAPH_ENDPOINT-env-first, active_profile-second) resolution order; shipped code correctly uses $HERMES_HOME instead (live-tested) but AC2 wording was never updated to match [this story file, AC2]
+- [x] [Review][Defer] scratch profile `.env` bootstrap has no validation [hermes/hermes-data/profiles/scratch/] — deferred, temporary profile, test-only, no bootstrap tooling needed
+- [x] [Review][Defer] Permission-denied `.env` file indistinguishable from "missing" → misleading diagnostic message [hermes/hermes-data/shared/skills/oxigraph-query/SKILL.md] — deferred, pre-existing edge case, low priority
+- [x] [Review][Defer] No automated test/CI gate for endpoint resolution [hermes repo] — deferred, by design per Epic 6 retro discipline (live verification is the DoD, not a pytest surface)
 
 ## Dev Notes
 

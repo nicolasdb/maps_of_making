@@ -1,5 +1,27 @@
 # Deferred Work
 
+## Deferred from: code review of story-13-1-parametrize-graph-endpoint-shared-oxigraph-skill (2026-07-07)
+
+### scratch profile `.env` bootstrap has no validation
+
+Nothing creates or checks `hermes/hermes-data/profiles/scratch/.env` — a typo (e.g.
+`oxigraph:7878` instead of `scratch-oxigraph:7878`) would silently pass and hit the
+wrong store, same failure class already hit once with `active_profile`. Deferred:
+scratch is a temporary, test-only profile — no bootstrap tooling justified for it.
+
+### Permission-denied `.env` indistinguishable from "missing"
+
+hermes SKILL.md's endpoint-resolution grep can't tell "file unreadable" from "line not
+found" — both yield empty output, so the agent reports "GRAPH_ENDPOINT not defined" even
+when the real cause is a filesystem permission issue. Pre-existing edge case in the new
+resolution logic, low priority — revisit if a profile's `.env` permissions cause a
+confusing STOP message in the field.
+
+### No automated test/CI gate for endpoint resolution
+
+By design per Epic 6 retro discipline: live verification is the DoD for this epic, not a
+pytest surface. Not actionable as a code fix in this story.
+
 ## Deferred from: code review of story-6-11-collapse-nl-answer-paths (2026-07-03)
 
 ### Rule 3a's unconfirmed-count nudge relies on the LLM tallying rows itself
