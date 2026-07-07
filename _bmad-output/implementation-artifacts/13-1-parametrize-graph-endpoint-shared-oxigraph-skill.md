@@ -1,6 +1,6 @@
 # Story 13.1: Parametrize the Graph Endpoint (shared oxigraph-query skill)
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -24,30 +24,30 @@ so that one shared skill can serve bianca→OpenFab store and bernardo→MoM sto
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Verify env propagation (AC: 1)
-  - [ ] Start/confirm hermes stack up (`podman compose up -d` in `~/github/hermes`; from distrobox prefix `distrobox-host-exec`)
-  - [ ] Add `GRAPH_ENDPOINT=http://oxigraph:7878` to `profiles/bianca/.env`
-  - [ ] Restart hermes (`podman compose restart hermes` — also re-applies `:Z` SELinux labels), open a bianca session, have the agent run `echo $GRAPH_ENDPOINT` via the terminal toolset
-  - [ ] Record result (propagated / not propagated) — this decides which resolution branch the skill leads with
-- [ ] Task 2: Rewrite endpoint sections of shared SKILL.md (AC: 2)
-  - [ ] Edit `hermes-data/shared/skills/oxigraph-query/SKILL.md`: add an "Endpoint resolution" section near the top (before « Endpoints »), replace the hardcoded table + curl examples with `${GRAPH_ENDPOINT}`-relative forms
-  - [ ] Update Pitfall #1 (« `localhost` ne marche pas — utiliser `oxigraph` ») → now: endpoint comes from profile env; `oxigraph` hostname only valid for stores on the same compose network
-  - [ ] Loosen the frontmatter `description` and Overview so the OpenFab-specific ontology content is clearly labeled as *the OpenFab store's vocabulary* (do NOT delete it — vocabulary-cartridge split is deferred, see Dev Notes)
-  - [ ] Keep file in French, keep existing structure/tone — this is bianca's working skill
-- [ ] Task 3: Set profile envs (AC: 3)
-  - [ ] `GRAPH_ENDPOINT=http://oxigraph:7878` in `profiles/bianca/.env` (done in Task 1) and `profiles/manny/.env`
-- [ ] Task 4: Scratch profile against second store (AC: 4)
-  - [ ] Stand up second SPARQL store (recommended: throwaway local oxigraph on another port — see Dev Notes; seed 2-3 distinctive triples so provenance of answers is unambiguous)
-  - [ ] Create scratch profile (clone minimal profile dir or use `hermes-profile-admin` skill in manny's profile if it covers creation), symlink shared skill per `references/shared-skills-pattern.md`: `mkdir -p profiles/<scratch>/skills/oxigraph-query && ln -s /opt/data/shared/skills/oxigraph-query/SKILL.md profiles/<scratch>/skills/oxigraph-query/SKILL.md` (container-side path in the link target)
-  - [ ] Set scratch `GRAPH_ENDPOINT` to the second store's URL
-- [ ] Task 5: Live done gate (AC: 5, 6)
-  - [ ] bianca: run an OpenFab-only query live (e.g. a `openfab:Submission` or FAQ lookup returning OpenFab-specific content — do NOT assert the exact counts written in SKILL.md ("34 soumissions", "19 questions"), those are a snapshot from skill-authoring time and bianca has imported since; provenance = content, not count)
-  - [ ] scratch: run a query returning the distinctive seeded triples, confirm second store answered
-  - [ ] Negative case: profile with `GRAPH_ENDPOINT` unset (scratch, line removed) → skill stops loudly and says endpoint unset; agent queries nothing, fabricates nothing
-  - [ ] Capture both transcripts + `ls -la` of both skill dirs into Completion Notes
-- [ ] Task 6: Documentation (AC: 2)
-  - [ ] Update `shared/skills/oxigraph-query/references/shared-skills-pattern.md` with a short "per-profile env vars" section (skill shared, endpoint per-profile — the ADR-018 contract)
-  - [ ] Note env-propagation finding + second-store choice in Completion Notes for 13.2 to inherit
+- [x] Task 1: Verify env propagation (AC: 1)
+  - [x] Start/confirm hermes stack up (was already up: `openfab-oxigraph` + `openfab-hermes`; plain `podman` reaches them in this shell — no `distrobox-host-exec` prefix needed here)
+  - [x] Add `GRAPH_ENDPOINT=http://oxigraph:7878` to `profiles/bianca/.env`
+  - [x] Restart hermes, open a bianca session (`hermes -p bianca -z ...`), agent ran `echo $GRAPH_ENDPOINT` via terminal toolset → returned `[]` (empty)
+  - [x] Recorded: **NOT propagated** as a shell var. But `$HERMES_HOME` (profile dir) IS propagated → skill leads with `$HERMES_HOME/.env` file-read (see Completion Notes)
+- [x] Task 2: Rewrite endpoint sections of shared SKILL.md (AC: 2)
+  - [x] Added "Résolution de l'endpoint (À FAIRE EN PREMIER)" section before « Endpoints »; replaced 3-row endpoint table + curl import example with `${GRAPH_ENDPOINT}`-relative forms
+  - [x] Rewrote Pitfall #1 → endpoint from profile env; `oxigraph` hostname only valid same-network; empty `GRAPH_ENDPOINT` = STOP
+  - [x] Relabeled frontmatter `description` + Overview as "Vocabulaire du store OpenFab" (kept intact — cartridge split deferred to 13.4)
+  - [x] Kept French + structure/tone; bumped version 0.2.0 → 0.3.0
+- [x] Task 3: Set profile envs (AC: 3)
+  - [x] `GRAPH_ENDPOINT=http://oxigraph:7878` in `profiles/bianca/.env` (Task 1) and `profiles/manny/.env`
+- [x] Task 4: Scratch profile against second store (AC: 4)
+  - [x] Stood up second store as a compose service `scratch-oxigraph` (same network, no published port, ephemeral) — cleanest variant per Dev Notes; seeded 2 distinctive triples (`PURPLE-WOMBAT-42`, `GREEN-NARWHAL-99`)
+  - [x] Created scratch profile via `hermes profile create scratch --clone` (from bianca), replaced cloned skill copy with symlink → `/opt/data/shared/skills/oxigraph-query/SKILL.md`
+  - [x] Set scratch `GRAPH_ENDPOINT=http://scratch-oxigraph:7878`
+- [x] Task 5: Live done gate (AC: 5, 6)
+  - [x] bianca: segment-count query over `openfab:Submission` → resolved `http://oxigraph:7878`, returned real OpenFab content (34 submissions / 15 segments) — regression clean
+  - [x] scratch: canary query → resolved `http://scratch-oxigraph:7878`, returned both seeded canaries
+  - [x] Negative case: scratch with `GRAPH_ENDPOINT` line removed → agent stopped loudly, cited the skill rule, queried nothing, fabricated nothing (correctly rejected the stale `active_profile` fallback)
+  - [x] Captured transcripts + `ls -la` of all three skill dirs (all symlink the one shared SSOT) into Completion Notes
+- [x] Task 6: Documentation (AC: 2)
+  - [x] Added "Variables d'environnement par-profile (contrat ADR-018)" section to `references/shared-skills-pattern.md`
+  - [x] Recorded env-propagation finding + second-store choice below for 13.2
 
 ## Dev Notes
 
@@ -125,8 +125,52 @@ Recommended: **throwaway local oxigraph on another host port.** `podman run -d -
 
 ### Agent Model Used
 
+claude-sonnet-5 (dev-story workflow, live-driven)
+
 ### Debug Log References
+
+- Live agent runs via `hermes -p <profile> -z "..."` inside `openfab-hermes` container (one-shot mode). `--yolo` flag intentionally avoided (blocked as unsafe-agent bypass; plain echo/curl don't hit approval gates anyway).
+- Each one-shot prints its answer then the process `dumped core / Aborted` on teardown — output is captured before teardown, cosmetic only.
 
 ### Completion Notes List
 
+**AC1 — env-propagation finding (carries into 13.2):**
+- A var in `profiles/<bot>/.env` is **NOT** exported as a shell variable into the terminal-toolset shell. Live proof: bianca agent ran `echo GRAPH_ENDPOINT=[$GRAPH_ENDPOINT]` → `GRAPH_ENDPOINT=[]`. hermes reads `.env` internally for its own config but does not propagate it to tool subprocesses.
+- **`$HERMES_HOME` IS propagated** and equals the *running* profile's dir (e.g. `/opt/data/profiles/scratch`). This is the reliable resolution anchor. The skill reads `$HERMES_HOME/.env`.
+- **Trap corrected mid-dev:** first skill draft resolved via `/opt/data/active_profile` (per the story's AC2 wording). That marker is the *sticky default* (was `bianca`), NOT the session's profile — a `-p scratch` run has `$HERMES_HOME=scratch` but `active_profile=bianca`. First scratch run consequently hit the OpenFab store (empty bindings). Fixed skill to use `$HERMES_HOME`; `active_profile` kept only as a last-ditch fallback if `$HERMES_HOME` is absent.
+
+**Second-store choice (carries into 13.2):** added `scratch-oxigraph` as a compose service on the default network (`http://scratch-oxigraph:7878`) — no host-port collision, no `host.containers.internal`. Ephemeral (no volume). For 13.2, bernardo→MoM will point `GRAPH_ENDPOINT` at the MoM store the same way (remote/VPS endpoint reachability still to be probed per ADR-018).
+
+**Live done-gate transcripts (AC5/AC6):**
+1. *scratch canary* → "Endpoint utilisé : `http://scratch-oxigraph:7878/query` (résolu depuis `$HERMES_HOME/.env`)" → `PURPLE-WOMBAT-42`, `GREEN-NARWHAL-99`.
+2. *bianca OpenFab* → "Endpoint résolu : `http://oxigraph:7878` (depuis `$HERMES_HOME/.env` du profile bianca)" → 34 submissions across 15 segments (top: prospects_membres 7). Regression clean.
+3. *scratch negative* (`GRAPH_ENDPOINT` removed) → "STOP — arrêt propre … je ne peux pas exécuter cette requête … jamais d'endpoint codé en dur, jamais de store deviné." No query issued, no fabrication, correctly declined the stale-`active_profile` fallback.
+
+**Symlink proof (AC5):** all three profiles symlink the one shared SSOT:
+```
+bianca/skills/oxigraph-query/SKILL.md  -> /opt/data/shared/skills/oxigraph-query/SKILL.md
+manny/skills/oxigraph-query/SKILL.md   -> /opt/data/shared/skills/oxigraph-query/SKILL.md  (+ stale local references/ dir, see below)
+scratch/skills/oxigraph-query/SKILL.md -> /opt/data/shared/skills/oxigraph-query/SKILL.md
+```
+
+**Notes / follow-ups:**
+- AC7 respected: no `oxigraph-query` symlink added to bernardo; maps_of_making `harness/` untouched.
+- **manny divergence:** manny's `oxigraph-query/` has a real (non-symlinked) `references/` dir alongside the symlinked `SKILL.md`. SKILL.md itself is correctly shared; the stale references/ copy should be removed/symlinked in 13.2 cleanup.
+- **Story AC2 wording correction:** the story said resolve via `/opt/data/active_profile`; live testing proved `$HERMES_HOME` is required instead. The shipped skill uses `$HERMES_HOME`.
+- hermes repo (`~/github/hermes`) git-hygiene fixed before dev: whitelist `.gitignore` (secrets purged from the initial commit). Skill/compose changes are git-tracked in that repo — **not committed** (awaiting Nicolas's approval per standing rule).
+- Two empty bind-mount dirs (`corpus/`, `faq/`) had vanished and blocked `podman compose restart`; recreated with `mkdir -p`.
+
 ### File List
+
+**hermes repo (`/var/home/nicolas/github/hermes/`) — implementation:**
+- `hermes-data/shared/skills/oxigraph-query/SKILL.md` — endpoint parametrization (v0.2.0 → 0.3.0)
+- `hermes-data/shared/skills/oxigraph-query/references/shared-skills-pattern.md` — per-profile env-var contract section
+- `docker-compose.yml` — added `scratch-oxigraph` service
+- `hermes-data/profiles/bianca/.env` — `GRAPH_ENDPOINT` (gitignored)
+- `hermes-data/profiles/manny/.env` — `GRAPH_ENDPOINT` (gitignored)
+- `hermes-data/profiles/scratch/**` — new throwaway profile (gitignored; skill symlinks shared SSOT)
+- `.gitignore` — whitelist model (repo hygiene, pre-dev)
+
+**maps_of_making — tracking only:**
+- `_bmad-output/implementation-artifacts/13-1-parametrize-graph-endpoint-shared-oxigraph-skill.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
