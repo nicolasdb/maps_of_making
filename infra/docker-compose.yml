@@ -46,8 +46,6 @@ services:
       - ../data/oxigraph:/data
     expose:
       - "7878"
-    ports:
-      - "7878:7878"
     command: serve --location /data --bind 0.0.0.0:7878
 
   # ─────────────────────────────────────────────────────────────────
