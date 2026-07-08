@@ -1,6 +1,6 @@
 # Story 13.2: Bernardo Profile Scaffold + Read Parity (MoM data plane)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -56,6 +56,14 @@ so that bernardo answers live MoM discovery questions in an encrypted Matrix roo
   - [x] Spot-check frozen harness Bernard still answers on `@bernard` (untouched)
 - [x] Task 6: Documentation + handoff (AC: all)
   - [x] Completion Notes: port-probe finding, endpoint-contract finding, dev-tooling casualties (AC 1.4), 13.3/13.4 handoffs
+
+## Review Findings
+
+- [x] [Review][Patch] AC4 manny cleanup was untracked outside story prose — fixed live: manny's `references/{shared-skills-pattern,knowledge-bundle-sync}.md` were non-symlinked stale copies (drifted from shared SSOT); replaced with symlinks to `/opt/data/shared/skills/oxigraph-query/references/`, matching the `SKILL.md` pattern.
+- [x] [Review][Patch] AC7b (no-fabrication on tool error) live-verified this session on `@bernardo`: `GRAPH_ENDPOINT` temporarily emptied, bernardo correctly STOPped loudly, explained the empty-var + wrong-store reasoning, no fabrication. Endpoint restored.
+- [x] [Review][Patch] mom-vocab.md count-all-spaces query missing `DISTINCT` — could double-count a space asserted across multiple named graphs. Fixed: `COUNT(DISTINCT ?s)`. [hermes-data/profiles/bernardo/skills/oxigraph-query/references/mom-vocab.md:44]
+- [x] [Review][Patch] mom-vocab.md read-by-name query template had no escaping guidance for `"`/`\` in interpolated names. Fixed: added escaping note. [hermes-data/profiles/bernardo/skills/oxigraph-query/references/mom-vocab.md:63]
+- [x] [Review][Defer] Commit `1878dbf` bundles 3 unrelated concerns (infra hardening, epics.md re-scope, story docs) — deferred, pre-existing commit-hygiene pattern, not blocking [maps_of_making@1878dbf] — deferred, pre-existing practice not introduced by this diff
 
 ## Dev Notes
 

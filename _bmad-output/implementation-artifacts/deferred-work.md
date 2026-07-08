@@ -1,5 +1,13 @@
 # Deferred Work
 
+## Deferred from: code review of story-13-2-bernardo-profile-scaffold-read-parity-mom-data-plane (2026-07-08)
+
+### Commit hygiene: unrelated concerns bundled in one commit
+
+`1878dbf` bundles infra hardening (docker-compose.yml), a large planning re-scope
+(epics.md write-auth section), and story docs in a single commit. Real but not
+actionable now — pre-existing practice in this repo, not introduced by this diff.
+
 ## Deferred from: code review of story-13-1-parametrize-graph-endpoint-shared-oxigraph-skill (2026-07-07)
 
 ### scratch profile `.env` bootstrap has no validation
