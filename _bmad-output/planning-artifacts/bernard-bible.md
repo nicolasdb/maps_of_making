@@ -7,6 +7,9 @@ supersedes the scattered notes in `mom_handoff_2026-05-15.md` §Bernard, `mom_ha
 
 **Last updated:** 2026-06-01 (UV = Bernard's labor semantic locked, Story 9.12). Prior: 2026-05-31 (added Jacques/SDG-14 compulsive-cleaning trait + UX-spec cross-ref; + hermit-crab vision palette & workshop-as-threshold, Story 9.12).
 
+> **Downstream distillate:** `hermes/hermes-data/profiles/bernardo/SOUL.md` is a runtime
+> distillate of this bible (Story 13.3) — canon edits go here, then re-distill SOUL.
+
 > **How to use this file:** Any copy, typography, or interaction that involves Bernard's
 > voice — wizard, drawer, validation messages, export confirmations, changelog, lore page —
 > must cross-check here first. When new decisions are made about Bernard, record them here
