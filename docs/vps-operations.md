@@ -20,6 +20,18 @@ Internet ──► nginx-gateway (host: hetzner-gateway stack)
 - The Maps-of-Making slices of that conf (`06-mapsofmaking.conf`, `07-admin-mapsofmaking.conf`) are version-controlled here under `infra/gateway-nginx/` and pushed with `make sync-gateway`.
 - `maps-nginx` joins both the `gateway` external network (for the proxy hop) and the project-internal network (for `oxigraph` + `mak-link-handler`).
 
+## SSH login is root — `~` traps
+
+`ssh hetzner` logs in as **root** by default (`$HOME=/root`), not `nicolas`. All project files live under `/home/nicolas/maps_of_making`, never `/root/...`.
+
+Any `cd ~/maps_of_making` or bare relative `cd maps_of_making` run from an unexpected CWD as root resolves against `/root`, not `/home/nicolas`. This has already created an orphan `/root/maps_of_making/data/oxigraph/` (empty, unmounted by any container — harmless but confusing) after a `docker compose up` was run with CWD wrongly resolved to `/root` via `~`.
+
+**Always use the absolute path** when operating as root on this VPS:
+```
+cd /home/nicolas/maps_of_making
+```
+Never rely on `~` or a bare relative `cd` for this repo in a root shell.
+
 ## Domains
 
 | Domain | Status | Behavior |
