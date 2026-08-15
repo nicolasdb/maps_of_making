@@ -279,6 +279,14 @@
     daylight: { seeded: '#A89F94', confirmed: '#378ADD', open: '#5DCAA5', shut: '#1D9E75', aging: '#C9963F', zombie: '#6A6A72', dead: '#5A5A60', broken: '#E24B4A' },
     depth:    { seeded: '#555560', confirmed: '#378ADD', open: '#5DCAA5', shut: '#1D9E75', aging: '#C9963F', zombie: '#6A6A72', dead: '#5A5A60', broken: '#E24B4A' },
   };
+  // Continental read: identity axis only. Staleness (axis B) is not decision-relevant
+  // at 2000km and renders as noise — it returns at z9 with the glyphs.
+  const LADDER_FAR = {
+    seeded: '#555560',                                           // unclaimed — stays recessive
+    confirmed: '#378ADD', aging: '#378ADD', broken: '#378ADD',   // claimed → blue
+    open: '#5DCAA5', shut: '#1D9E75',                            // live → green
+    zombie: '#6A6A72', dead: '#5A5A60',                          // unreachable/closed stay grey
+  };
   // Dedicated neon for the open-pulse halo — must pop on both surfaces.
   // Stroke gives non-colour separation; seeded/dead/zombie read as hollow/faint rings.
   const LADDER_STROKE = {
@@ -318,6 +326,14 @@
     for (const k of KINDS) expr.push(k, table[k]);
     expr.push(table.seeded); // fallback
     return expr;
+  }
+  // Zoom-staged ladder: identity-only below z7, full ladder from z9 — the same
+  // breakpoint circle-stroke-opacity and the glyph layer use, so "detail arrives"
+  // is one event, not three. GL interpolates the colour outputs; no JS zoom listener.
+  function ladderColorExpr(surface) {
+    return ['interpolate', ['linear'], ['zoom'],
+      7, colorMatchExpr(LADDER_FAR),
+      9, colorMatchExpr(LADDER[surface])];
   }
   function strokeMatchExpr(surface) {
     const t = LADDER_STROKE[surface];
@@ -365,7 +381,7 @@ function glyphColorExpr(surface) {
           'circle-sort-key': ['match', ['get', 'kind'], 'seeded', 0, 1],
         },
         paint: {
-          'circle-color': colorMatchExpr(LADDER[surface]),
+          'circle-color': ladderColorExpr(surface),
           'circle-radius': radiusExpr(DOT_SCALE),
           'circle-opacity': 1.0,
           'circle-stroke-width': ['case',
@@ -377,7 +393,11 @@ function glyphColorExpr(surface) {
         } });
     }
     if (!map.getLayer('spaces-glyph')) {
+      // minzoom 9: below that the glyphs are 1–2px smudges and staleness is not
+      // decision-relevant anyway. The opacity ramp fades them in on the same
+      // breakpoint as circle-stroke-opacity instead of popping at the hard cut.
       map.addLayer({ id: 'spaces-glyph', type: 'symbol', source: 'spaces',
+        minzoom: 9,
         filter: ['in', ['get', 'kind'], ['literal', Object.keys(KIND_GLYPH)]],
         layout: {
           'text-field': ['match', ['get', 'kind'], 'broken', '×', 'aging', '!', 'zombie', '…', 'dead', '+', ''],
@@ -386,7 +406,10 @@ function glyphColorExpr(surface) {
           'text-allow-overlap': true,
           'text-ignore-placement': true,
         },
-        paint: { 'text-color': glyphColorExpr(surface) } });
+        paint: {
+          'text-color': glyphColorExpr(surface),
+          'text-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0, 10, 1],
+        } });
     }
     wireSpacesClick();
     startBeacon();
@@ -397,7 +420,7 @@ function glyphColorExpr(surface) {
   function applyLadderPaint(findActive = false) {
     const surface = currentSurface();
     if (map.getLayer('spaces-point')) {
-      map.setPaintProperty('spaces-point', 'circle-color', colorMatchExpr(LADDER[surface]));
+      map.setPaintProperty('spaces-point', 'circle-color', ladderColorExpr(surface));
       map.setPaintProperty('spaces-point', 'circle-radius',
         findActive ? 6 : radiusExpr(DOT_SCALE));
       map.setPaintProperty('spaces-point', 'circle-stroke-color',
@@ -1459,7 +1482,18 @@ function glyphColorExpr(surface) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url }),
         });
-        reg = await resp.json();
+        // Read as text first: nginx returns an HTML error page on 502/504, and
+        // `resp.json()` would surface that as a JSON.parse complaint — the parser's
+        // problem reported as the server's verdict.
+        const raw = await resp.text();
+        try {
+          reg = JSON.parse(raw);
+        } catch (_) {
+          if (resp.status === 504 || resp.status === 502 || resp.status === 524) {
+            throw new Error(`server took too long to respond (HTTP ${resp.status}). Your space may still have been registered — reload the map before retrying.`);
+          }
+          throw new Error(`HTTP ${resp.status}`);
+        }
         if (!resp.ok) throw new Error(reg.detail?.error || `HTTP ${resp.status}`);
       } catch (e) {
         btn.disabled = false;
@@ -1468,27 +1502,34 @@ function glyphColorExpr(surface) {
         return;
       }
 
-      // Refresh map state — clear filters first so the new space is always visible
-      state.filters.networks.clear();
-      state.filters.countries.clear();
-      state.filters.statuses.clear();
-      state.filters.specialties.clear();
-      try {
-        const geoResp = await fetch(`/data/spaces.geojson?t=${Date.now()}`);
-        const geoJson = await geoResp.json();
-        ingestGeoJSON(geoJson);
-        if (state.selectedId && !state.spaces.find((s) => s.id === state.selectedId)) {
-          state.selectedId = null;
-        }
-        buildFilterChips();
-        refreshSpacesLayer();
-      } catch (_) { /* non-fatal */ }
-
       const spaceName = reg.space_name || 'Your space';
       // space_uri is "urn:mak:space/{slug}" — extract slug as the local ID
       const parts = reg.space_uri ? reg.space_uri.split('/') : [];
       const spaceId = parts.length > 0 ? parts[parts.length - 1] : null;
       const hasSpace = Boolean(spaceId);
+
+      // Refresh map state — clear filters first so the new space is always visible
+      state.filters.networks.clear();
+      state.filters.countries.clear();
+      state.filters.statuses.clear();
+      state.filters.specialties.clear();
+      // The server now rematerializes spaces.geojson in a background task, so the
+      // first refetch can land before the new space is in it. Retry until the slug
+      // shows up (or we run out of patience — the map is still usable either way).
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 2000));
+        try {
+          const geoResp = await fetch(`/data/spaces.geojson?t=${Date.now()}`);
+          const geoJson = await geoResp.json();
+          ingestGeoJSON(geoJson);
+          if (state.selectedId && !state.spaces.find((s) => s.id === state.selectedId)) {
+            state.selectedId = null;
+          }
+          buildFilterChips();
+          refreshSpacesLayer();
+          if (!spaceId || state.spaces.some((s) => s.id === spaceId)) break;
+        } catch (_) { /* non-fatal */ }
+      }
 
       // Build subset progress message
       const subset = reg.subset || 'none';

@@ -12,7 +12,7 @@ import httpx
 import yaml
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import BackgroundTasks, FastAPI, Header, HTTPException
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 from geopy.exc import GeocoderServiceError, GeocoderTimedOut, GeocoderUnavailable
@@ -924,7 +924,7 @@ async def validate_url(req: UrlRequest):
 
 
 @app.post("/api/register-url")
-async def register_url(req: UrlRequest):
+async def register_url(req: UrlRequest, background_tasks: BackgroundTasks):
     result = await _fetch_and_validate(req.url)
     data = result.pop("_data", {})
 
@@ -1008,23 +1008,31 @@ async def register_url(req: UrlRequest):
     except Exception as snap_err:
         logger.warning("snapshot store write failed for %s: %s", slug, snap_err)
 
-    # Fire one synchronous tick so the new space lights up immediately on
-    # the map (writes mom:observedAt/updatedAt/openNow into urn:mak:space/<slug>).
-    try:
-        await run_space_pipeline(
-            uid=slug,
-            endpoint_url=req.url,
-            graph_uri=graph_uri,
-            subject=space_uri,
-            oxigraph_endpoint=OXIGRAPH_ENDPOINT,
-        )
-    except Exception as e:
-        logger.warning("[register] initial heartbeat for %s failed (non-fatal): %s", slug, e)
+    # The response below is complete once the Oxigraph write and the snapshot land —
+    # nothing the client renders depends on the tick or the rematerialize. Both are
+    # slow (remote fetch; whole-corpus SPARQL + ~3k snapshot reads) and together they
+    # used to push the request past nginx's proxy_read_timeout, so the coordinator was
+    # told "failed" about a registration that had in fact succeeded. Defer them.
+    async def _finish_registration() -> None:
+        # Fire one tick so the new space lights up on the map
+        # (writes mom:observedAt/updatedAt/openNow into urn:mak:space/<slug>).
+        try:
+            await run_space_pipeline(
+                uid=slug,
+                endpoint_url=req.url,
+                graph_uri=graph_uri,
+                subject=space_uri,
+                oxigraph_endpoint=OXIGRAPH_ENDPOINT,
+            )
+        except Exception as e:
+            logger.warning("[register] initial heartbeat for %s failed (non-fatal): %s", slug, e)
 
-    try:
-        await _rematerialize_geojson()
-    except Exception as e:
-        logger.error("GeoJSON rematerialization failed (non-fatal): %s", e)
+        try:
+            await _rematerialize_geojson()
+        except Exception as e:
+            logger.error("GeoJSON rematerialization failed (non-fatal): %s", e)
+
+    background_tasks.add_task(_finish_registration)
 
     logger.info("registered space: %s (%s)", name, space_uri)
     return {
