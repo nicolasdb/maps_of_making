@@ -1,6 +1,6 @@
 # Story 13.3: Persona / Voice Port — Bernard's Character into Bernardo's SOUL
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -92,6 +92,17 @@ This story was refined beyond the one-line epic sketch during a party-mode round
   - [x] Nicolas judges each transcript sounds-like-Bernard; record verdicts. **All 5 probes PASS** — see `golden_exchanges.md` verdicts table.
 - [x] Task 6: Documentation + handoffs (AC: all)
   - [x] Completion Notes: token count, persistence finding, guardrail-scope honesty statement, deferred ops-hardening handoff, 13.4 canned-copy handoff.
+
+### Review Findings
+
+- [x] [Review][Patch] Add bible entries for new canon (rule 1 "ledger-first, no query no claim" + rule 8 "never invent lore") — AC1.1 back-write requirement; entries emerged during live fabrication-fix testing but weren't recorded upstream with a date.
+- [x] [Review][Patch] File List in Completion Notes is incomplete — add `hermes-data/profiles/bianca/SOUL.md`, `hermes-data/profiles/manny/skills/oxigraph-query/references/{knowledge-bundle-sync.md,shared-skills-pattern.md}` (symlink conversion), `hermes-data/shared/skills/oxigraph-query/SKILL.md`.
+- [x] [Review][Patch] SOUL.md exemplar 1 JSON (`{"state":{"open":false}}`) doesn't match golden_exchanges.md's actual live-verified transcript ("Canary nominal — all fishtems operational", open) [hermes-data/profiles/bernardo/SOUL.md:29-35] — align exemplar payload shape to the real tool response.
+- [x] [Review][Patch] New "Cross-graph querying" template in shared SKILL.md has no `LIMIT`/graph-count guard [hermes-data/shared/skills/oxigraph-query/SKILL.md:224-238] — add one; conflicts with this story's own token-drain concern (AC7).
+- [x] [Review][Defer] Manny reference-doc symlink conversion + mom-vocab.md DISTINCT/escaping fixes, out of 13.3's stated File List scope [hermes-data/profiles/manny/..., hermes-data/profiles/bernardo/skills/oxigraph-query/references/mom-vocab.md] — deferred, confirmed intentional (Nicolas: "manny = intentional fixes")
+- [x] [Review][Defer] `hermes-data/active_profile` deleted + gitignored — deferred, confirmed intentional
+- [x] [Review][Defer] Bianca's SOUL.md "Mise en scène" section added, outside AC9's stated scope — deferred, confirmed intentional (Nicolas: bianca served as template)
+- [x] [Review][Defer] SOUL.md core token count (714) exceeds AC3's 700 hard ceiling — deferred, confirmed intentional (Nicolas: purpose over strict token count)
 
 ## Dev Notes
 
@@ -222,6 +233,12 @@ claude-fable-5 (Claude Fable 5)
 - `_bmad-output/planning-artifacts/bernard-bible.md` — added downstream-distillate pointer blockquote in header (modified)
 - `_bmad-output/implementation-artifacts/13-3-persona-voice-port-bernard-yaml-to-hermes.md` — story tracking (modified)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — 13.3 → in-progress (modified)
+- `hermes/hermes-data/profiles/bianca/SOUL.md` — added "Mise en scène" didascalie-convention section (out-of-AC9-scope, confirmed intentional — bianca served as structural template) (modified)
+- `hermes/hermes-data/profiles/manny/skills/oxigraph-query/references/knowledge-bundle-sync.md` — converted to symlink → `/opt/data/shared/skills/oxigraph-query/references/knowledge-bundle-sync.md` (out-of-AC9-scope, confirmed intentional cleanup) (modified)
+- `hermes/hermes-data/profiles/manny/skills/oxigraph-query/references/shared-skills-pattern.md` — converted to symlink → `/opt/data/shared/skills/oxigraph-query/references/shared-skills-pattern.md` (out-of-AC9-scope, confirmed intentional cleanup) (modified)
+- `hermes/hermes-data/shared/skills/oxigraph-query/SKILL.md` — added "Cross-graph querying (bernardo profile — MoM store)" section (modified)
+- `hermes/hermes-data/profiles/bernardo/skills/oxigraph-query/references/mom-vocab.md` — COUNT DISTINCT fix + name-escaping note (out-of-AC9-scope, confirmed intentional carryover fix) (modified)
+- `hermes/hermes-data/active_profile` — deleted, gitignored going forward (out-of-AC9-scope, confirmed intentional) (deleted)
 
 ## Change Log
 

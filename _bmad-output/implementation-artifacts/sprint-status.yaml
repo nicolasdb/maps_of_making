@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-01
-last_updated: "2026-07-08 (Story 13.2 → done — code review closed 4 patches (manny stale references/ symlinked to shared SSOT, AC7b no-fabrication live-verified on bernardo, mom-vocab.md count query DISTINCT-fixed, name-lookup query escaping documented) + 1 defer (commit-hygiene, pre-existing). Prior: oxigraph 7878 host-port removed + redeployed (VPS live-verified), endpoint-contract probe clean, bernardo profile configured, live encrypted-Matrix done-gate passed (3193-space answer matched ground truth) after fixing a dead-on-arrival Matrix token + latent OTK-zombie-pool corruption, negative test passed. Prior: Epic 9 retro closed, Story 13.1 done)"
+last_updated: "2026-08-15 (Story 13.3 → done — code review closed 4 patches (bible back-write of new ledger-first/never-invent-lore canon per AC1.1, File List completeness fix, SOUL.md exemplar payload aligned to live-verified transcript, LIMIT guard added to cross-graph query template) + 4 defers, all confirmed intentional by Nicolas (manny symlink/mom-vocab carryover fixes, active_profile deletion+gitignore, bianca Mise-en-scène addition, 714-token SOUL core over the 700 hard ceiling — purpose over strict count). Prior: 2026-07-08 Story 13.2 → done — code review closed 4 patches (manny stale references/ symlinked to shared SSOT, AC7b no-fabrication live-verified on bernardo, mom-vocab.md count query DISTINCT-fixed, name-lookup query escaping documented) + 1 defer (commit-hygiene, pre-existing). Prior: oxigraph 7878 host-port removed + redeployed (VPS live-verified), endpoint-contract probe clean, bernardo profile configured, live encrypted-Matrix done-gate passed (3193-space answer matched ground truth) after fixing a dead-on-arrival Matrix token + latent OTK-zombie-pool corruption, negative test passed. Prior: Epic 9 retro closed, Story 13.1 done)"
 project: maps_of_making
 project_key: NOKEY
 tracking_system: file-system
@@ -248,7 +248,7 @@ development_status:
   epic-13: in-progress
   13-1-parametrize-graph-endpoint-shared-oxigraph-skill: done
   13-2-bernardo-profile-scaffold-read-parity-mom-data-plane: done
-  13-3-persona-voice-port-bernard-yaml-to-hermes: review
+  13-3-persona-voice-port-bernard-yaml-to-hermes: done
   13-4-tool-parity-find-read-gaps-fabrication-backstop: backlog
   13-4-write-command-parity-deploy-key-platform-admin-adapter: backlog  # 2026-07-07: split from 13.4 — write parity via existing Matrix-power-level + git-deploy-key path (NOT WebID); platform-admin adapter for Matrix/Telegram/Discord only. Unblocks 13.5 retirement without waiting on Epic 10.
   13-5-parity-eval-harness-matrix-retirement: backlog

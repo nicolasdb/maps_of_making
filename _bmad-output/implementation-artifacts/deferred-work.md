@@ -1,5 +1,47 @@
 # Deferred Work
 
+## Deferred from: code review of 13-3-persona-voice-port-bernard-yaml-to-hermes (2026-08-15)
+
+- Manny reference-doc symlink conversion + mom-vocab.md DISTINCT/escaping fixes bundled into 13.3's diff, outside its stated File List scope — confirmed intentional by Nicolas ("manny = intentional fixes"), no further action.
+- `hermes-data/active_profile` deleted + gitignored in the same diff — confirmed intentional by Nicolas, no further action.
+- Bianca's SOUL.md gained a "Mise en scène" section (didascalie convention), outside AC9's stated "sole functional deltas" for this persona-only story — confirmed intentional (bianca served as the structural template), no further action.
+- SOUL.md core token count (714) exceeds AC3's 700 hard ceiling — confirmed intentional by Nicolas: purpose over strict token count, no trim required.
+
+## Deferred from: hetzner-gateway VPS log-hygiene work (2026-07-31)
+
+### `maps-link-handler` logs its own healthcheck at ~473 lines/min
+
+Measured on the VPS: **4735 log lines in a 10-minute sample**, overwhelmingly
+`INFO: 127.0.0.1 - "GET /health HTTP/1.1" 200 OK` from the container's own Docker
+healthcheck. That is roughly **60 MB/day**, and it had grown the container's json
+log to **2.8 GB** — by far the largest single file on a 38 GB disk that was at
+79% and has a confirmed OOM history.
+
+Deferred to this repo because the fix belongs here, not in the gateway. Either:
+
+- filter `/health` out of uvicorn's access log (a logging filter on
+  `uvicorn.access`, dropping records whose path is `/health`), or
+- lengthen `healthcheck.interval` in `infra/`'s compose for `mak-link-handler`.
+
+The first is better — it keeps the healthcheck responsive while removing the noise.
+
+**Already mitigated host-side (2026-07-31), so this is not urgent:** Docker now
+caps json-file logs at 10 MB × 3 per container via `/etc/docker/daemon.json`, and
+all containers were recreated so the cap is bound. Disk went 79% → 45%. What
+remains is a usability cost, not a capacity one: `docker logs maps-link-handler`
+is unreadable, and the 30 MB window holds only ~8 hours before real events are
+evicted by healthcheck noise — which is exactly when you would want them.
+
+Same pattern, smaller, in `time-tracker-bmad`'s `webhook-custom3` (~14 lines/min).
+
+Full context and evidence:
+`hetzner-gateway/backlog/2026-07-31-vps-capacity-and-log-hygiene.md`.
+
+Note for whoever picks this up: `maps-nginx`'s bind-mounted log dir
+(`data/logs/nginx/`) is now rotated by a host-side logrotate stanza managed from
+`hetzner-gateway/ops/logrotate/nginx-gateway`. If that container is ever renamed,
+the `postrotate` there must be updated too.
+
 ## Deferred from: code review of story-13-2-bernardo-profile-scaffold-read-parity-mom-data-plane (2026-07-08)
 
 ### Commit hygiene: unrelated concerns bundled in one commit
