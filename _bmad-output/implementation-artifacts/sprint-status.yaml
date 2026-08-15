@@ -1,5 +1,5 @@
 # generated: 2026-05-01
-# last_updated: 2026-07-09 (13-3 persona-voice-port → review — live done-gate PASS, all 5 probes)
+# last_updated: 2026-08-15 (quick-dev zoom-legibility + register-timeout → review; 13-4 re-scoped port→expose; 2 design docs added as draft)
 # project: maps_of_making
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-01
-last_updated: "2026-08-15 (Story 13.3 → done — code review closed 4 patches (bible back-write of new ledger-first/never-invent-lore canon per AC1.1, File List completeness fix, SOUL.md exemplar payload aligned to live-verified transcript, LIMIT guard added to cross-graph query template) + 4 defers, all confirmed intentional by Nicolas (manny symlink/mom-vocab carryover fixes, active_profile deletion+gitignore, bianca Mise-en-scène addition, 714-token SOUL core over the 700 hard ceiling — purpose over strict count). Prior: 2026-07-08 Story 13.2 → done — code review closed 4 patches (manny stale references/ symlinked to shared SSOT, AC7b no-fabrication live-verified on bernardo, mom-vocab.md count query DISTINCT-fixed, name-lookup query escaping documented) + 1 defer (commit-hygiene, pre-existing). Prior: oxigraph 7878 host-port removed + redeployed (VPS live-verified), endpoint-contract probe clean, bernardo profile configured, live encrypted-Matrix done-gate passed (3193-space answer matched ground truth) after fixing a dead-on-arrival Matrix token + latent OTK-zombie-pool corruption, negative test passed. Prior: Epic 9 retro closed, Story 13.1 done)"
+last_updated: "2026-08-15 (quick-dev-zoom-legibility-register-timeout → review — two independent bugs fixed in the working tree, uncommitted/undeployed: continental-scale glyph noise (LADDER_FAR zoom-staged colour + spaces-glyph minzoom 9) and the register-url false-failure (nginx 30s proxy_read_timeout returned an HTML 504 that the client surfaced as 'JSON.parse: unexpected character' — the OpenFab registration had actually SUCCEEDED; pipeline tick + geojson rematerialize moved to BackgroundTasks, honest non-JSON error copy, retrying post-register refetch, /api/ timeout →60s). Offline suite 61 passed/17 skipped; 31 integration failures are all ConnectError from a stopped local stack. Also: Story 13.4 RE-SCOPED port→expose (MoM hosts an MCP tool surface; hermes mcp_servers verified PER-PROFILE, docs wrong) and two design docs added as draft (design-mom-mcp-tool-surface, design-analytics-minimum-instrumentation) — both carry open decisions needing Nicolas. Prior: Story 13.3 → done — code review closed 4 patches (bible back-write of new ledger-first/never-invent-lore canon per AC1.1, File List completeness fix, SOUL.md exemplar payload aligned to live-verified transcript, LIMIT guard added to cross-graph query template) + 4 defers, all confirmed intentional by Nicolas (manny symlink/mom-vocab carryover fixes, active_profile deletion+gitignore, bianca Mise-en-scène addition, 714-token SOUL core over the 700 hard ceiling — purpose over strict count). Prior: 2026-07-08 Story 13.2 → done — code review closed 4 patches (manny stale references/ symlinked to shared SSOT, AC7b no-fabrication live-verified on bernardo, mom-vocab.md count query DISTINCT-fixed, name-lookup query escaping documented) + 1 defer (commit-hygiene, pre-existing). Prior: oxigraph 7878 host-port removed + redeployed (VPS live-verified), endpoint-contract probe clean, bernardo profile configured, live encrypted-Matrix done-gate passed (3193-space answer matched ground truth) after fixing a dead-on-arrival Matrix token + latent OTK-zombie-pool corruption, negative test passed. Prior: Epic 9 retro closed, Story 13.1 done)"
 project: maps_of_making
 project_key: NOKEY
 tracking_system: file-system
@@ -249,7 +249,34 @@ development_status:
   13-1-parametrize-graph-endpoint-shared-oxigraph-skill: done
   13-2-bernardo-profile-scaffold-read-parity-mom-data-plane: done
   13-3-persona-voice-port-bernard-yaml-to-hermes: done
+  # 13-4 RE-SCOPED 2026-08-15 (roundtable): "tool-surface PORT" → "MoM EXPOSES its tool surface".
+  #   Porting harness/isochrone.py into hermes would fork the ORS key (2000/day), the 24h polygon
+  #   cache and the per-room cooldown, and contradicts the 13.1/13.2 lesson (read parity shipped
+  #   with ZERO code ported). Instead: MoM hosts an MCP server (maps-mcp container, streamable-http
+  #   + bearer); hermes profiles are clients. Tool selection rule: a tool exists when SPARQL can't
+  #   express it or when it guards state → travel_search qualifies; find/nearby/read do NOT (the
+  #   shared SPARQL skill already covers them; a second path = shadow state). log_gap is a write →
+  #   stays with 13-4-write. VERIFIED live: hermes `mcp_servers` is PER-PROFILE, not global (docs
+  #   are wrong) — profiles/manny/config.yaml:62 runs a remote HTTP context7 entry today.
+  #   Full design + 5 open decisions: design-mom-mcp-tool-surface.md. Rewrite this story before dev.
   13-4-tool-parity-find-read-gaps-fabrication-backstop: backlog
   13-4-write-command-parity-deploy-key-platform-admin-adapter: backlog  # 2026-07-07: split from 13.4 — write parity via existing Matrix-power-level + git-deploy-key path (NOT WebID); platform-admin adapter for Matrix/Telegram/Discord only. Unblocks 13.5 retirement without waiting on Epic 10.
+  # 13-5 GATE (2026-08-15): harness retirement is a ONE-WAY DOOR. Must not close until the MCP
+  #   travel_search tool has carried real traffic and a live Bernardo-in-Matrix parity test matches
+  #   harness/isochrone.py polygons. Unit tests prove the port; only parity proves it's safe to delete.
   13-5-parity-eval-harness-matrix-retirement: backlog
   epic-13-retrospective: optional
+
+  # Ad-hoc quick-dev slices (not epic-scoped)
+  # Implemented in the working tree, uncommitted + undeployed, awaiting Nicolas's review session.
+  # Fix 1: zoom-staged dot legibility (LADDER_FAR + glyph minzoom 9) — aging/broken glyphs no longer
+  #   pollute the continental view. Fix 2: register-url 30s nginx timeout returned an HTML 504 that
+  #   the client reported as "JSON.parse: unexpected character" — the registration had SUCCEEDED.
+  #   Pipeline tick + geojson rematerialize moved to BackgroundTasks; honest non-JSON error copy;
+  #   retrying post-register geojson refetch; /api/ timeout 30s→60s.
+  quick-dev-zoom-legibility-register-timeout: review
+
+  # Design decisions from the 2026-08-15 roundtable — NOT yet stories.
+  # Each doc ends with an explicit open-decisions list needing Nicolas before a story can be written.
+  design-mom-mcp-tool-surface: draft            # re-scopes 13-4 (see comment above); open: network topology, published-vs-internal endpoint, whose ORS key for the distributable image, when per-tenant token issuance lands, what the image gives a makerspace that the map doesn't
+  design-analytics-minimum-instrumentation: draft  # project has ZERO analytics. First baseline (7 surviving days): 338 index loads (56 crawlers) → 2 validate-url → 1 register. Google Analytics rejected (wrong layer, embed is live on a third-party site = joint-controller problem, EU consent/transfer, contradicts the Zone-3 trust receipt). Agreed direction: fix maps-nginx log_format (logs only the gateway IP today → unique visitors = 1), keep a daily aggregate row, GoAccess one-shot, append-only JSONL event log from link_handler + `make metrics`. Open: funnel vs trend, IP hashing, whether the public network-health page comes first.
