@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import sys
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -644,7 +645,21 @@ def _load_thresholds_from_config() -> dict:
     return {"endpoint_health": endpoint_health, "operational_state": operational_state}
 
 
+# Serializes whole-corpus rebuilds. Registration moved this off the request path into
+# a BackgroundTask, which removed the de-facto serialization a single in-flight request
+# provided: two registrations, or a registration racing the scheduler's heartbeat, now
+# overlap freely. The temp file is per-run so a second writer cannot truncate the file
+# the first is about to publish; the lock keeps N concurrent whole-corpus passes from
+# piling up on Oxigraph and the snapshot store.
+_rematerialize_lock = asyncio.Lock()
+
+
 async def _rematerialize_geojson() -> None:
+    async with _rematerialize_lock:
+        await _rematerialize_geojson_locked()
+
+
+async def _rematerialize_geojson_locked() -> None:
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
             f"{OXIGRAPH_ENDPOINT}/query",
@@ -712,9 +727,14 @@ async def _rematerialize_geojson() -> None:
 
     out_path = Path(GEOJSON_OUTPUT)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = out_path.with_suffix(".geojson.tmp")
-    tmp_path.write_text(json.dumps(geojson, indent=2))
-    tmp_path.replace(out_path)
+    # Per-run temp name: replace() is atomic, but a shared temp path is not — a second
+    # writer truncating it mid-flight would publish a torn file to the map.
+    tmp_path = out_path.with_suffix(f".{uuid.uuid4().hex}.tmp")
+    try:
+        tmp_path.write_text(json.dumps(geojson, indent=2))
+        tmp_path.replace(out_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
     logger.info("rematerialized %d spaces → %s", len(features), out_path)
 
 

@@ -107,6 +107,11 @@
   // everything as `confirmed`.
   function ingestGeoJSON(json) {
     const features = json.features || [];
+    // Materialization stamp — lets the post-register refetch tell a rebuilt corpus
+    // from the cached one. Presence of a slug cannot: a re-registration claims a
+    // space that is already in the file, so "is it there?" is true before the
+    // background rematerialize has run at all.
+    state.geojsonGeneratedAt = json.generated_at || null;
     state.spaces = features.map((f) => ({
       ...f.properties,
       coordinates: {
@@ -281,12 +286,14 @@
   };
   // Continental read: identity axis only. Staleness (axis B) is not decision-relevant
   // at 2000km and renders as noise — it returns at z9 with the glyphs.
-  const LADDER_FAR = {
-    seeded: '#555560',                                           // unclaimed — stays recessive
-    confirmed: '#378ADD', aging: '#378ADD', broken: '#378ADD',   // claimed → blue
-    open: '#5DCAA5', shut: '#1D9E75',                            // live → green
-    zombie: '#6A6A72', dead: '#5A5A60',                          // unreachable/closed stay grey
-  };
+  // Derived from LADDER so a palette edit cannot desync the two tables: only the
+  // states that collapse are named here. `aging` folds into claimed-blue (a stale
+  // listing is still a claimed space); `broken`, `zombie` and `dead` keep their
+  // greys — a space we cannot reach is not a working claimed space, and painting
+  // it blue at 2000km is an honesty cost the map does not need to pay.
+  function ladderFar(surface) {
+    return { ...LADDER[surface], aging: LADDER[surface].confirmed, broken: LADDER[surface].zombie };
+  }
   // Dedicated neon for the open-pulse halo — must pop on both surfaces.
   // Stroke gives non-colour separation; seeded/dead/zombie read as hollow/faint rings.
   const LADDER_STROKE = {
@@ -327,12 +334,14 @@
     expr.push(table.seeded); // fallback
     return expr;
   }
-  // Zoom-staged ladder: identity-only below z7, full ladder from z9 — the same
-  // breakpoint circle-stroke-opacity and the glyph layer use, so "detail arrives"
-  // is one event, not three. GL interpolates the colour outputs; no JS zoom listener.
+  // Zoom-staged ladder: identity-only below z9, full ladder from z9 up.
+  // `step`, not `interpolate` — a blend between two palettes invents intermediate
+  // colours that match no legend chip (amber→blue passes through mud). Detail on a
+  // map appears by zoom level, like street labels; it does not cross-fade. The only
+  // thing that transitions here is the day/night basemap.
   function ladderColorExpr(surface) {
-    return ['interpolate', ['linear'], ['zoom'],
-      7, colorMatchExpr(LADDER_FAR),
+    return ['step', ['zoom'],
+      colorMatchExpr(ladderFar(surface)),
       9, colorMatchExpr(LADDER[surface])];
   }
   function strokeMatchExpr(surface) {
@@ -340,7 +349,8 @@
     return ['match', ['get', 'kind'], 'seeded', t.seeded, 'dead', t.dead, 'zombie', t.zombie, t.default];
   }
   // Single continuous radius ramp: a field of light at world zoom (z2) growing to
-  // street-scale pins by z12+. The ONLY thing that changes with zoom is radius.
+  // street-scale pins by z12+. Radius is the one property that ramps continuously;
+  // colour and glyphs step at z9 (see ladderColorExpr).
   const RADIUS_STOPS = [[1.5, 1], [2, 2.2], [6, 3.5], [9, 9], [12, 12], [16, 16], [18, 22]];
   const DOT_SCALE = 0.5;
 function radiusExpr(densityMul) {
@@ -394,8 +404,9 @@ function glyphColorExpr(surface) {
     }
     if (!map.getLayer('spaces-glyph')) {
       // minzoom 9: below that the glyphs are 1–2px smudges and staleness is not
-      // decision-relevant anyway. The opacity ramp fades them in on the same
-      // breakpoint as circle-stroke-opacity instead of popping at the hard cut.
+      // decision-relevant anyway. Same hard z9 cut as the colour ladder, so the
+      // amber dot and its `!` arrive together — a full-strength staleness colour
+      // with no glyph to disambiguate it would be the worst of both.
       map.addLayer({ id: 'spaces-glyph', type: 'symbol', source: 'spaces',
         minzoom: 9,
         filter: ['in', ['get', 'kind'], ['literal', Object.keys(KIND_GLYPH)]],
@@ -408,7 +419,6 @@ function glyphColorExpr(surface) {
         },
         paint: {
           'text-color': glyphColorExpr(surface),
-          'text-opacity': ['interpolate', ['linear'], ['zoom'], 9, 0, 10, 1],
         } });
     }
     wireSpacesClick();
@@ -1476,6 +1486,9 @@ function glyphColorExpr(surface) {
       btn.disabled = true;
       btn.textContent = 'Registering…';
       let reg;
+      // Stamp of the corpus we are looking at now, so the refetch below can tell
+      // "the server rebuilt it" from "the server has not got to it yet".
+      const baselineStamp = state.geojsonGeneratedAt;
       try {
         const resp = await fetch('/api/register-url', {
           method: 'POST',
@@ -1489,8 +1502,15 @@ function glyphColorExpr(surface) {
         try {
           reg = JSON.parse(raw);
         } catch (_) {
-          if (resp.status === 504 || resp.status === 502 || resp.status === 524) {
-            throw new Error(`server took too long to respond (HTTP ${resp.status}). Your space may still have been registered — reload the map before retrying.`);
+          reg = null;
+        }
+        // An unreadable body means we do not know what happened server-side, and the
+        // write may well have landed. Say exactly that rather than naming a status as
+        // if it were a verdict — including on a 2xx, where "failed: HTTP 200" would be
+        // the same lie in a new costume.
+        if (!reg || typeof reg !== 'object') {
+          if (resp.ok || resp.status >= 500) {
+            throw new Error(`the server did not return a readable answer (HTTP ${resp.status}). Your space may still have been registered — reload the map before retrying.`);
           }
           throw new Error(`HTTP ${resp.status}`);
         }
@@ -1503,9 +1523,13 @@ function glyphColorExpr(surface) {
       }
 
       const spaceName = reg.space_name || 'Your space';
-      // space_uri is "urn:mak:space/{slug}" — extract slug as the local ID
-      const parts = reg.space_uri ? reg.space_uri.split('/') : [];
-      const spaceId = parts.length > 0 ? parts[parts.length - 1] : null;
+      // space_uri is "urn:mak:space/{slug}" — extract the slug as the local ID.
+      // The server may return a URI whose slug differs from the one derived from the
+      // submitted name (endpoint-dedup and claim-merge reuse the existing graph), so
+      // trust the response over any local guess, and check the shape before using it
+      // to navigate.
+      const rawSpaceId = (reg.space_uri || '').split('/').pop() || '';
+      const spaceId = /^[a-zA-Z0-9_-]{1,64}$/.test(rawSpaceId) ? rawSpaceId : null;
       const hasSpace = Boolean(spaceId);
 
       // Refresh map state — clear filters first so the new space is always visible
@@ -1513,23 +1537,38 @@ function glyphColorExpr(surface) {
       state.filters.countries.clear();
       state.filters.statuses.clear();
       state.filters.specialties.clear();
-      // The server now rematerializes spaces.geojson in a background task, so the
-      // first refetch can land before the new space is in it. Retry until the slug
-      // shows up (or we run out of patience — the map is still usable either way).
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) await new Promise((r) => setTimeout(r, 2000));
+      // The server rematerializes spaces.geojson in a background task, so the first
+      // refetch usually still holds the pre-registration corpus. Wait for a NEW
+      // materialization stamp, not for the slug: a re-registration claims a space
+      // that is already in the file, so a slug check would pass instantly against
+      // stale data and report a flip that has not happened.
+      // Backoff 1/2/4/8/16s ≈ 31s — the rematerialize is a whole-corpus rebuild.
+      let corpusRebuilt = false;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 1000 * 2 ** (attempt - 1)));
         try {
           const geoResp = await fetch(`/data/spaces.geojson?t=${Date.now()}`);
+          if (!geoResp.ok) continue;
           const geoJson = await geoResp.json();
+          // A proxied error body parses as valid JSON and would empty the map.
+          if (geoJson?.type !== 'FeatureCollection' || !Array.isArray(geoJson.features)) continue;
+          const fresh = !baselineStamp || geoJson.generated_at !== baselineStamp;
+          // Only pay for the re-ingest + chip rebuild when the payload actually
+          // changed, so the user does not watch the filter bar flicker five times.
+          if (!fresh && attempt > 0) continue;
           ingestGeoJSON(geoJson);
           if (state.selectedId && !state.spaces.find((s) => s.id === state.selectedId)) {
             state.selectedId = null;
           }
           buildFilterChips();
           refreshSpacesLayer();
-          if (!spaceId || state.spaces.some((s) => s.id === spaceId)) break;
-        } catch (_) { /* non-fatal */ }
+          if (fresh) { corpusRebuilt = true; break; }
+        } catch (_) { /* non-fatal — try again */ }
       }
+      // Honest about what we actually observed: the registration is committed either
+      // way (the server answered 200 before deferring the slow tail), but whether the
+      // dot on the map reflects it yet is something we either saw or did not.
+      const landed = corpusRebuilt && (!spaceId || state.spaces.some((s) => s.id === spaceId));
 
       // Build subset progress message
       const subset = reg.subset || 'none';
@@ -1550,14 +1589,26 @@ function glyphColorExpr(surface) {
         `;
       }
 
+      // Two truths, told apart. `landed` = we saw the rebuilt corpus carry the space;
+      // otherwise the write is committed but the map has not caught up, and claiming
+      // a flip we did not observe is the same false verdict as the old parse error,
+      // pointing the other way.
+      const headline = landed
+        ? `✓ ${escHtml(spaceName)} is live on the map!${subsetBadge}`
+        : `✓ ${escHtml(spaceName)} is registered.${subsetBadge}`;
+      const subline = landed
+        ? 'Your pin has flipped from ⚪ to 🔵.'
+        : 'The map is still rebuilding — your pin will appear within a minute. Reload if you want to watch for it.';
       $('.addurl-body').innerHTML = `
         <div style="text-align:center;padding:20px 0;">
-          <div style="font-size:22px;margin-bottom:8px;">✓ ${escHtml(spaceName)} is live on the map!${subsetBadge}</div>
-          <div style="color:var(--muted);margin-bottom:18px;">Your pin has flipped from ⚪ to 🔵.</div>
+          <div style="font-size:22px;margin-bottom:8px;">${headline}</div>
+          <div style="color:var(--muted);margin-bottom:18px;">${subline}</div>
           ${subsetSection}
-          <div style="color:var(--muted);font-size:12px;margin-top:16px;">Opening your space profile…</div>
+          ${landed ? '<div style="color:var(--muted);font-size:12px;margin-top:16px;">Opening your space profile…</div>' : ''}
         </div>`;
-      if (hasSpace) {
+      // Only fly to the profile when the space is actually in state.spaces — otherwise
+      // selectSpace would open on nothing.
+      if (hasSpace && landed) {
         setTimeout(() => {
           closeDrawer('addurl');
           selectSpace(spaceId, { fly: true });
