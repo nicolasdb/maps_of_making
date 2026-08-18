@@ -1,6 +1,6 @@
 # Freshness axes — computed in the browser
 
-> The pipeline ([01](01-walking-skeleton.md)) ships **raw tokens** on the wire and
+> The pipeline ([01](../explanation/architecture/01-walking-skeleton.md)) ships **raw tokens** on the wire and
 > nothing more. Lifecycle state is **never stored** — the browser computes it at
 > view time from the tokens + a thresholds block, then picks one map marker.
 >
@@ -90,7 +90,7 @@ property on each GeoJSON feature; MapLibre reads it via a `match` expression to 
 the glyph character and colour for the `spaces-glyph` symbol layer (`app.js:379`).
 Colour per kind is computed by `glyphColorExpr` (`app.js:335`). *Why* those glyphs and
 colours (circles-vs-emoji, the riso palette, the curated legend) is
-[04 · Design rules](04-design-rules.md). The `find` drawer exposes a subset as status
+[04 · Design rules](../explanation/architecture/04-design-rules.md). The `find` drawer exposes a subset as status
 chips: `seeded · confirmed · open · shut · broken` (`buildFilterChips`, `app.js:718`).
 The decay markers (`aging`/`zombie`/`dead`) render on the map but are not yet
 filterable.
@@ -105,4 +105,4 @@ filterable.
   reload — every pin re-buckets. The canary demo exploits this via `thresholds_override`.
 - **No write-race.** The heartbeat writers own the tokens (`extract_mom` is *forbidden*
   from emitting them, asserted at `mom.py:49`); the browser only reads. See
-  [02 · Field Traceability §C](02-field-traceability.md).
+  [02 · Field Traceability §C](field-traceability.md).

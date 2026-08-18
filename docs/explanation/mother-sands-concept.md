@@ -16,7 +16,7 @@ Mother Sands' SpaceAPI endpoint is programmable: the operator can inject control
 | **B** Lifecycle freshness | Days since last meaningful content update | System fault → MOM's responsibility |
 | **C** Open/Close boolean | `state.open` propagation | Presentational |
 
-See `docs/canary-operator-runbook.md` for how to use the canary to diagnose pipeline faults.
+See `../how-to/diagnose-a-broken-map.md` for how to use the canary to diagnose pipeline faults.
 
 ## Named graph isolation
 

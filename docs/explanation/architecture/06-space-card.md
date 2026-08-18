@@ -1,6 +1,6 @@
 # Space card — where every field surfaces
 
-> **The last hop.** [02 · Field traceability](02-field-traceability.md) traces a JSON field *into
+> **The last hop.** [02 · Field traceability](../../reference/field-traceability.md) traces a JSON field *into
 > storage*; it stops at the store. This doc closes the loop: **which field surfaces as which element
 > on the space-profile card** — the panel that fills the `detail` drawer ([05](05-view-shell.md)) when
 > you click a pin. One function builds it: `renderDetail` (`web/app.js:870`). All anchors are exact.
@@ -36,7 +36,7 @@ Quick-Facts rows render **even when the field is missing**, showing an em-dash p
 publish. (Mirrors the pipeline's no-silent-drops stance at the UI layer.)
 
 ### The card is gated by lifecycle kind
-`computeMarker(s)` (the [03](03-freshness-axes.md) computation) decides *which* sections render, not
+`computeMarker(s)` (the [03](../../reference/freshness-axes.md) computation) decides *which* sections render, not
 just the badge colour:
 - **seeded** — minimal card: hero + a *"Is this your space? Register…"* banner that opens `addurl`
   (`app.js:1028`). No Quick Facts, no Zone 3 — there's no fetched data yet.
@@ -90,7 +90,7 @@ the same fetch cadence the cron uses — the user can't hammer the source.
 
 ---
 
-This completes the schematic set: [01](01-walking-skeleton.md) pipeline · [02](02-field-traceability.md)
-net-list · [03](03-freshness-axes.md) marker mechanics · [04](04-design-rules.md) map visual grammar ·
+This completes the schematic set: [01](01-walking-skeleton.md) pipeline · [02](../../reference/field-traceability.md)
+net-list · [03](../../reference/freshness-axes.md) marker mechanics · [04](04-design-rules.md) map visual grammar ·
 [05](05-view-shell.md) drawer shell · **06 card field-surface** (this doc). A field's full life is now
 traceable end to end: *endpoint JSON → store → materialize → marker → card element.*

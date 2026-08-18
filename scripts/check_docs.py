@@ -11,7 +11,9 @@ is superseded, add its dead token to DEAD_TOKENS so the guard protects it too.
 
 Scope
 -----
-  STRICT    architecture.md, prd.md, docs/architecture/*.md   (must be fully clean)
+  STRICT    architecture.md, prd.md, docs/explanation/architecture/*.md,
+            docs/reference/{field-traceability,semantic-layer,freshness-axes}.md
+            (must be fully clean)
   PREAMBLE  epics.md, only the reference sections ABOVE '## Epic 0'
             (Requirements Inventory + Architecture References + traceability +
             Epic List). Done-epic story bodies below are intentional history and
@@ -35,7 +37,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / "_bmad-output" / "planning-artifacts"
-ARCH_DOCS = ROOT / "docs" / "architecture"
+# Former docs/architecture/*.md, now split by Diátaxis quadrant.
+ARCH_EXPLANATION = ROOT / "docs" / "explanation" / "architecture"
+ARCH_REFERENCE_NAMES = ["field-traceability.md", "semantic-layer.md", "freshness-axes.md"]
 
 # dead token (regex) -> the live replacement, shown in the error so it teaches.
 DEAD_TOKENS: dict[str, str] = {
@@ -94,7 +98,8 @@ def main() -> int:
         (PLAN / "prd.md", False),
         (PLAN / "epics.md", True),  # preamble (reference sections) only
     ]
-    targets += [(p, False) for p in sorted(ARCH_DOCS.glob("*.md"))]
+    targets += [(p, False) for p in sorted(ARCH_EXPLANATION.glob("*.md"))]
+    targets += [(ROOT / "docs" / "reference" / name, False) for name in ARCH_REFERENCE_NAMES]
 
     total = 0
     for path, preamble in targets:

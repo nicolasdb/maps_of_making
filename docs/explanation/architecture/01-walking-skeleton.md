@@ -24,7 +24,7 @@ flowchart LR
 | **always** | SQLite raw snapshot | — (every fetch) | space-profile card (`/api/space/{id}/raw`) | transparency — verbatim, unaltered |
 | **on change** | Oxigraph triples | `content_changed` | map pin (`spaces.geojson`) | freshness — semantic, queryable |
 
-Freshness tokens ride this flow — `observed_at` (minted at fetch, **SQLite**) and `updated_at` (written on change, **Oxigraph**) are the two on the sketch; `open_now` rides alongside. The browser turns these into a map marker; that computation (the three axes + marker allocation) is its own doc: [03 · Freshness axes](03-freshness-axes.md). Lifecycle state is **computed client-side** — never stored on the wire.
+Freshness tokens ride this flow — `observed_at` (minted at fetch, **SQLite**) and `updated_at` (written on change, **Oxigraph**) are the two on the sketch; `open_now` rides alongside. The browser turns these into a map marker; that computation (the three axes + marker allocation) is its own doc: [03 · Freshness axes](../../reference/freshness-axes.md). Lifecycle state is **computed client-side** — never stored on the wire.
 
 <details>
 <summary><b>Code anchors</b> — where each box lives</summary>
@@ -44,7 +44,7 @@ When `ext_fab.machines` arrives in the JSON later, its documentation is one row:
 |---|---|---|---|
 | `ext_fab.machines` | Transform → _which sub-script?_ | Oxigraph predicate `mom:?` | map filter / Bernard card / — |
 
-Filling that row for **every** field is the **[Field Traceability Matrix](02-field-traceability.md)**. The flow above is the skeleton it hangs on.
+Filling that row for **every** field is the **[Field Traceability Matrix](../../reference/field-traceability.md)**. The flow above is the skeleton it hangs on.
 
 ---
 
@@ -78,6 +78,6 @@ _🟢 on trunk · 🟡 parked ahead of need · 🔴 purpose lost · ❓ needs yo
 ---
 
 **Trail:** [09](09-seeding-model.md) seeding (how data enters) · **01 pipeline** (how it flows) ·
-[02](02-field-traceability.md) field net-list · [08](08-semantic-layer.md) triplestore ·
-[03](03-freshness-axes.md) freshness · [04](04-design-rules.md) map grammar ·
+[02](../../reference/field-traceability.md) field net-list · [08](../../reference/semantic-layer.md) triplestore ·
+[03](../../reference/freshness-axes.md) freshness · [04](04-design-rules.md) map grammar ·
 [05](05-view-shell.md) drawers · [06](06-space-card.md) card · [07](07-wizard-shell.md) wizard.

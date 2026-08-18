@@ -213,7 +213,7 @@ seed-spaceapi:
 	source venv/bin/activate && python scripts/seed_spaceapi.py --list "$(LIST)" --network "$(NETWORK)" --force
 	$(MAKE) heartbeat
 
-## CSV pivot for batch imports (see docs/seed-import-runbook.md). Curate a clean CSV
+## CSV pivot for batch imports (see docs/how-to/import-a-space-batch.md). Curate a clean CSV
 ## by hand, then convert to a canonical bundle — we don't auto-parse messy sources.
 ##   make bundle-to-csv BUNDLE=data/seed-lists/BE.spaces.json CSV=/tmp/be.csv  # dump to curate
 ##   make csv-to-bundle CSV=/tmp/be-clean.csv BUNDLE=data/seed-lists/BE.bundle.json
@@ -239,7 +239,7 @@ seed-bundle:
 ## Idempotent (PUT replaces the graph). Dormant scaffold for the Epic 6 NL→SPARQL bot —
 ## the live heartbeat/materialize path does NOT query these graphs yet. Folded into
 ## devdeploy so a fresh stack always carries the vocabulary. See
-## docs/architecture/08-semantic-layer.md.
+## docs/reference/semantic-layer.md.
 load-ontology:
 	bash scripts/load_ontology.sh http://localhost:7878
 
@@ -383,7 +383,7 @@ vps-reset:
 ## Mother Sands diagnostic canary — three-axis fault attribution tool.
 ## Single source of truth: https://mapsofmaking.org/canary/mother-sands.json
 ## Scenario cycle: make cb-zombie → writes web/canary/mother-sands.json → push to VPS → heartbeat
-## See docs/canary-setup.md and docs/canary-operator-runbook.md for full guide.
+## See docs/how-to/set-up-mother-sands.md and docs/how-to/diagnose-a-broken-map.md for full guide.
 
 ## Push canary JSON + logo to VPS static server
 endpoint:
@@ -432,7 +432,7 @@ ca-timeout:
 
 ca-dns-fail:
 	@echo "  → point the heartbeat at an unresolvable URL to test DNS failure"
-	@echo "  → see docs/canary-operator-runbook.md#axis-a-dns-fail"
+	@echo "  → see docs/how-to/diagnose-a-broken-map.md#axis-a-dns-fail"
 
 ca-http-error:
 	$(CANARY_SCENARIO) a-http-error

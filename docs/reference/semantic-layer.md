@@ -1,6 +1,6 @@
 # Semantic layer — the triplestore, the ontologies, the crosswalk
 
-> **The upstream hop [02](02-field-traceability.md) assumes.** The net-list traces a SpaceAPI field
+> **The upstream hop [02](field-traceability.md) assumes.** The net-list traces a SpaceAPI field
 > into *storage* — but "storage" is an Oxigraph triplestore with a deliberate named-graph layout, a
 > set of `.ttl` vocabularies, and a `crosswalk.csv` that licenses the mapping. This doc documents that
 > layer: **what RDF the pipeline writes, where, against which vocabulary, and which of it is live vs.
@@ -17,7 +17,7 @@ you can search, compare, and connect to other spaces. This layer is what makes t
 **enhances flat JSON into a searchable semantic layer** laid over the map, turning isolated points into
 a queryable fabric. (*How* it does that is the rest of this doc; this section is the *why*.)
 
-The meaning is organised in **the same layers the wizard authors** ([07](07-wizard-shell.md)) — the
+The meaning is organised in **the same layers the wizard authors** ([07](../explanation/architecture/07-wizard-shell.md)) — the
 tiers are the shared spine between authoring and storage:
 
 | Tier | Layer | Axis | What it buys | Namespace |
@@ -45,7 +45,7 @@ never *redefine* it).
 > are **not executed by the internal pipeline** — `knowsAbout` activity strings are stored raw. They
 > *are* executed at query time by external SPARQL clients: OHM joins across the vocabulary graph to
 > resolve raw tags to Wikidata QIDs. See [§How the TTL is actually used](#how-the-ttl-is-actually-used)
-> and `docs/ohm-integration.md`.
+> and `../explanation/ohm-integration.md`.
 
 ## The triplestore is named graphs, not one bag of triples
 
@@ -64,7 +64,7 @@ the diagnostic canary from colliding.
 
 The three-graph backbone (`space` / `canary` / `public_ledger`) is its own design decision — see
 [[project_three_graph_model]]. The append-only ledger is the on-graph half of the Zone 3 trust
-guarantee ([06](06-space-card.md)).
+guarantee ([06](../explanation/architecture/06-space-card.md)).
 
 ## What the pipeline actually writes — and what it does NOT read
 
@@ -80,7 +80,7 @@ This is the load-bearing honest-inventory fact:
 
 The vocabulary and the internal runtime are still only *informally* coupled (via `crosswalk.csv`). The
 vocabulary graphs are now load-bearing for *external* consumers — specifically OHM. See below and
-`docs/ohm-integration.md`.
+`../explanation/ohm-integration.md`.
 
 ## How the TTL is actually used
 
@@ -185,7 +185,7 @@ This closes the wiring gap the inventory flagged. The load remains idempotent an
 
 - 🟢 **`mom.ttl`** — **upgraded from dormant to live**. Added 34 SKOS concepts (previously ~15), 29 with
   Wikidata `owl:sameAs` links. The activity vocabulary is now queried by OHM via direct SPARQL using the
-  `skos:prefLabel|skos:altLabel` bridge. See `docs/ohm-integration.md`.
+  `skos:prefLabel|skos:altLabel` bridge. See `../explanation/ohm-integration.md`.
 - 🟢 **`ontology/crosswalks/mom-to-okw.ttl`** — **new file, live**. The planned-but-missing OKW crosswalk
   is now built and loaded into `<urn:mak:crosswalk/mom-to-okw>`. Queryable via SPARQL, tested by
   `tests/test_ohm_mom_integration.py`.
@@ -196,8 +196,8 @@ This closes the wiring gap the inventory flagged. The load remains idempotent an
 
 ---
 
-This adds the upstream hop to the trail: [01](01-walking-skeleton.md) pipeline ·
-[02](02-field-traceability.md) net-list · **08 semantic layer** (the store + vocabulary 02 writes into) ·
-[03](03-freshness-axes.md) marker mechanics · [04](04-design-rules.md) map grammar ·
-[05](05-view-shell.md) drawers · [06](06-space-card.md) card · [07](07-wizard-shell.md) wizard. A field's
+This adds the upstream hop to the trail: [01](../explanation/architecture/01-walking-skeleton.md) pipeline ·
+[02](field-traceability.md) net-list · **08 semantic layer** (the store + vocabulary 02 writes into) ·
+[03](freshness-axes.md) marker mechanics · [04](../explanation/architecture/04-design-rules.md) map grammar ·
+[05](../explanation/architecture/05-view-shell.md) drawers · [06](../explanation/architecture/06-space-card.md) card · [07](../explanation/architecture/07-wizard-shell.md) wizard. A field's
 life now traces from *SpaceAPI input → extractor → `urn:mak:space/<id>` RDF → materialize → map/card.*

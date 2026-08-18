@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """CSV ⇄ seed-bundle converter — the curation pivot for Path B imports.
 
-The philosophy (see docs/seed-import-runbook.md): MoM does NOT try to parse every
+The philosophy (see docs/how-to/import-a-space-batch.md): MoM does NOT try to parse every
 messy source. You curate a clean CSV by hand (in a spreadsheet), then convert it to
 a canonical bundle that `seed_bundle.py` ingests with zero guesswork. Missing or
 wrong data is left missing — that's the nudge for a space to publish a real endpoint.

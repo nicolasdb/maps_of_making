@@ -4,7 +4,7 @@ This runbook is the **manual test surface** for the Mother Sands diagnostic cana
 when the public map shows something incoherent and you need to attribute the fault to a
 specific layer.
 
-See also: `docs/canary-setup.md` (first-time setup) and `docs/mother-sands-concept.md`
+See also: `set-up-mother-sands.md` (first-time setup) and `../explanation/mother-sands-concept.md`
 (why the canary exists). The Makefile canary targets are the source of truth — this
 runbook documents how to drive them.
 
@@ -180,7 +180,7 @@ make vps-c-demo-on  vps-c-demo-off
 
 Authoring still runs locally; only the mutation target changes. See
 `memory/project_canary_public_url_and_vps_parity.md` and the "Makefile inventory" section of
-`docs/vps-operations.md`.
+`operate-the-vps.md`.
 
 ---
 

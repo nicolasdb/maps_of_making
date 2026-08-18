@@ -12,7 +12,8 @@
 
 This integration makes MoM's SPARQL endpoint queryable by OHM using Wikidata QIDs as the shared vocabulary hub — the same anchor OHM already uses internally via Wikipedia URLs. It also adds a Mac Docker dev environment so the full stack (MoM + OHM) can be run locally without Podman or a VPS.
 
-The planning document that preceded this work is at `docs/draft/ohm-mom-integration.md`.
+The planning document that preceded this work is at `../archive/draft/ohm-mom-integration.md`
+(superseded — kept for historical record, see `../archive/draft/ARCHIVED.md`).
 
 ---
 

@@ -143,12 +143,12 @@ python scripts/seed_csv.py to-csv --bundle data/seed-lists/BE.spaces.json --out 
 python scripts/seed_csv.py to-bundle --csv /tmp/be-clean.csv --out data/seed-lists/BE.bundle.json
 ```
 
-Full import walkthrough: [seed-import-runbook.md](../seed-import-runbook.md).
+Full import walkthrough: [seed-import-runbook.md](../../how-to/import-a-space-batch.md).
 
 ---
 
 This closes the input side of the trail:
 **09 seeding** (how data enters) · [01](01-walking-skeleton.md) pipeline (how it flows) ·
-[02](02-field-traceability.md) field net-list · [08](08-semantic-layer.md) triplestore ·
-[03](03-freshness-axes.md) freshness · [04](04-design-rules.md) map grammar ·
+[02](../../reference/field-traceability.md) field net-list · [08](../../reference/semantic-layer.md) triplestore ·
+[03](../../reference/freshness-axes.md) freshness · [04](04-design-rules.md) map grammar ·
 [05](05-view-shell.md) drawers · [06](06-space-card.md) card · [07](07-wizard-shell.md) wizard.

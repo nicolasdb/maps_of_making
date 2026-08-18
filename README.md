@@ -77,9 +77,21 @@ This isn't proprietary. It's infrastructure you can understand, audit, and fork.
 
 ---
 
+## Documentation
+
+| | | |
+|---|---|---|
+| 🧭 **Tutorial** | Learn by doing | [Publish your first space](docs/tutorial/01-publish-your-first-space.md) |
+| 🛠️ **How-to guides** | Solve a specific task | [Register your space](docs/how-to/register-your-space.md) · [Import a batch of spaces](docs/how-to/import-a-space-batch.md) · [Set up Mother Sands](docs/how-to/set-up-mother-sands.md) · [Diagnose a broken map](docs/how-to/diagnose-a-broken-map.md) · [Operate the VPS](docs/how-to/operate-the-vps.md) |
+| 📖 **Reference** | Look up the facts | [Field traceability](docs/reference/field-traceability.md) · [Semantic layer](docs/reference/semantic-layer.md) · [Freshness axes](docs/reference/freshness-axes.md) · [VPS topology](docs/reference/vps-topology.md) |
+| 💡 **Explanation** | Understand the why | [Mother Sands concept](docs/explanation/mother-sands-concept.md) · [Field lifecycle](docs/explanation/field-lifecycle.md) · [OHM integration](docs/explanation/ohm-integration.md) · [Architecture](docs/explanation/architecture/01-walking-skeleton.md) |
+
 ## For space operators
 
-Early pilot networks (RFF, VOW) are rolling out workshops now. If you're outside those networks and want to join, [reach out](mailto:nicolas.de.barquin@gmail.com).
+Early pilot networks (RFF, VOW) are rolling out workshops now. If you're outside those
+networks and want to join, [reach out](mailto:nicolas.de.barquin@gmail.com) — or jump
+straight to the [tutorial](docs/tutorial/01-publish-your-first-space.md) or the
+[how-to guide](docs/how-to/register-your-space.md).
 
 The setup is simple:
 1. Publish a structured file at a URL you control

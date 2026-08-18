@@ -1,7 +1,7 @@
 # Mother Sands Canary — Setup Guide
 
 Mother Sands is MoM's diagnostic canary: a synthetic space we control to test our own data
-pipeline end to end. This guide covers the moving parts; `docs/canary-operator-runbook.md`
+pipeline end to end. This guide covers the moving parts; `diagnose-a-broken-map.md`
 covers driving it scenario by scenario.
 
 ## Quick Start

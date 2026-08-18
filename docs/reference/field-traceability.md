@@ -1,11 +1,11 @@
 # Field Traceability Matrix
 
 > The net-list at field resolution. One row per JSON field, traced across the
-> [main pipeline](01-walking-skeleton.md): **JSON key → fetch → transform → store → materialize → surface.**
+> [main pipeline](../explanation/architecture/01-walking-skeleton.md): **JSON key → fetch → transform → store → materialize → surface.**
 >
 > Each cell is read from live code, not memory — refs point at the exact source.
 > Freshness-token *computation* (the A/B/C axes + marker allocation) lives in its
-> own doc: [03 · Freshness axes](03-freshness-axes.md).
+> own doc: [03 · Freshness axes](freshness-axes.md).
 
 ## Sketch payload
 
@@ -53,7 +53,7 @@ Fields group by **who produces them**, which is the real structure of the pipeli
 
 > These four are the **raw inputs** to freshness. How the browser turns them into
 > the three axes (reachability · lifecycle · open/close) and a map marker is
-> [03 · Freshness axes](03-freshness-axes.md) — not repeated here.
+> [03 · Freshness axes](freshness-axes.md) — not repeated here.
 
 | Token | Ontology term | Store | GeoJSON property | Ref |
 |---|---|---|---|---|
@@ -76,7 +76,7 @@ This is where `api_compatibility` (and every other compliance-only field) lives 
 
 ## Findings (honest-inventory)
 
-> ⚠️ **Finding 1 — `crosswalk.csv` cites a deleted file.** Several rows reference `transformer.py:507`. That file no longer exists; the live transform is `spaceapi_extract/{core,mom}.py` + `pipeline.py`. The crosswalk notes are **stale** wherever they cite `transformer.py`. → `docs/architecture/TODO: refresh crosswalk provenance notes`.
+> ⚠️ **Finding 1 — `crosswalk.csv` cites a deleted file.** Several rows reference `transformer.py:507`. That file no longer exists; the live transform is `spaceapi_extract/{core,mom}.py` + `pipeline.py`. The crosswalk notes are **stale** wherever they cite `transformer.py`. → `TODO: refresh crosswalk provenance notes`.
 
 > ✅ **Finding 2 — RESOLVED (cut 2026-06-02).** `api_compatibility` is **required by the SpaceAPI schema** (so it stays in the input JSON and the SQLite raw receipt, untouched), but MoM does not consume it: no live extractor in `core.py`/`mom.py`, absent from `_binding_to_feature`. It had already been dropped from `classify_subset()` tier logic earlier (impl artifact 3-0-A) — the crosswalk row was the orphan left behind. **Removed from `crosswalk.csv`** (32 rows, `validate_crosswalk.py` green). The field still rides into SQLite as part of the verbatim payload — compliance preserved, Oxigraph kept clean.
 

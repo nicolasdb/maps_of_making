@@ -68,7 +68,7 @@ The location beat asks only **street + city**. Bernard *derives* lat/lon (+ post
   manual lat/lon fields (`showManualCoords` `genjson.js:1445`); a result with no country → manual
   country field (`showManualCountry` `genjson.js:1458`). Continue stays reachable via manual entry.
 
-## Field → v15 document (the INPUT mirror of [02](02-field-traceability.md)/[06](06-space-card.md))
+## Field → v15 document (the INPUT mirror of [02](../../reference/field-traceability.md)/[06](06-space-card.md))
 
 `assemblev15Doc` (`genjson.js:645`) builds the file in tier order so it mirrors the coordinator's
 mental model (meta → Tier 0 → Tier 1 → mom: last):
@@ -144,7 +144,7 @@ Scanned `genjson.js` the same way as [05](05-view-shell.md)/[06](06-space-card.m
 ---
 
 This extends the schematic set past the map: [01](01-walking-skeleton.md) pipeline ·
-[02](02-field-traceability.md) net-list · [03](03-freshness-axes.md) marker mechanics ·
+[02](../../reference/field-traceability.md) net-list · [03](../../reference/freshness-axes.md) marker mechanics ·
 [04](04-design-rules.md) map visual grammar · [05](05-view-shell.md) drawer shell ·
 [06](06-space-card.md) card field-surface · **07 wizard shell** (this doc). The pipeline's INPUT now
 has both its doors documented: paste-an-endpoint ([05](05-view-shell.md)) and author-from-scratch (here).

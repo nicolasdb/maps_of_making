@@ -5,7 +5,7 @@
 > registers a live endpoint URL, the heartbeat pipeline takes over in-place.
 >
 > Path A (live endpoint → heartbeat fetch → auto-seed) is documented in
-> [vps-operations.md](vps-operations.md) under "register URL".
+> [operate-the-vps.md](operate-the-vps.md) under "register URL".
 
 ## The philosophy — curate, don't auto-parse
 

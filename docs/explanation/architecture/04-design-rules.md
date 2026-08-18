@@ -1,6 +1,6 @@
 # Design rules — the map surface
 
-> **Why the map looks the way it does.** Companion to [03 · Freshness axes](03-freshness-axes.md):
+> **Why the map looks the way it does.** Companion to [03 · Freshness axes](../../reference/freshness-axes.md):
 > 03 owns the *mechanics* (which token → which marker, thresholds, precedence). This doc
 > owns the *decisions* — the visual grammar and the reasoning behind it. Where the two
 > overlap, **03 is authoritative for the what**; this file never re-lists glyphs or thresholds,
@@ -67,7 +67,7 @@ Two guardrails:
 |---|---|
 | Palette tokens | `:root` `maps-of-making.html:23` |
 | Marker fills (circle states) | `.map-marker.<kind> .marker-fill` `:174` |
-| Decay glyphs / emoji-only set | `createMarkerSVG`, `MARKER_GLYPH`, `EMOJI_ONLY` — `web/app.js` (see [03](03-freshness-axes.md)) |
+| Decay glyphs / emoji-only set | `createMarkerSVG`, `MARKER_GLYPH`, `EMOJI_ONLY` — `web/app.js` (see [03](../../reference/freshness-axes.md)) |
 | Legend swatches | `.pin-swatch.<kind>` `:146`; legend markup `:696` |
 | Open pulse | `.marker-pulse` `:186`, toggle `:764`, reduced-motion `:507` |
 

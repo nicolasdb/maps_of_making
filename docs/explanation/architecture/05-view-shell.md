@@ -63,7 +63,7 @@ Only **three** drawers touch the pipeline. The other two are self-contained view
   [01](01-walking-skeleton.md) surfaces to the reader.
 - **find → OUTPUT.** `filteredSpaces()` (`app.js:665`) is the single predicate; the status facet
   calls **`computeMarker(s)`** — *the same marker computation documented in
-  [03](03-freshness-axes.md)*. So a status chip and a map pin can never disagree: one source, two
+  [03](../../reference/freshness-axes.md)*. So a status chip and a map pin can never disagree: one source, two
   readers. Filter changes re-run `refreshSpacesLayer()` + `updateCounts()`.
 - **addurl → INPUT.** The only drawer that writes back into the pipeline — it's the front door for
   the two onboarding paths (the wizard CTA and the paste-your-endpoint fork).
@@ -89,7 +89,7 @@ input, and otherwise manage their own `state`.
   `#btn-`; the machine enforces exclusivity. Don't introduce a second concurrent slot without a
   reason — the depth-1 invariant is what keeps focus and `Esc` unambiguous.
 - **Filter status ≡ marker kind.** Any new status facet must route through `computeMarker` / the
-  axes in [03](03-freshness-axes.md) — never a parallel re-derivation.
+  axes in [03](../../reference/freshness-axes.md) — never a parallel re-derivation.
 - **Palettes are surface-scoped.** The map's `:root` is not shared with `admin`/`genjson`/
   `mothersands` (each owns its own; see [04](04-design-rules.md)). Don't merge them into one file
   without renaming tokens — collisions would silently repaint. (Extraction to a shared `tokens.css`
