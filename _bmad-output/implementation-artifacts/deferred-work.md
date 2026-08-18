@@ -1,5 +1,64 @@
 # Deferred Work
 
+## Deferred from: Diátaxis documentation restructure (2026-08-17) → needs its own story, number TBD at triage
+
+### Conditional GET is absent from the live heartbeat fetch path — investigate before claiming it publicly
+
+Found while drafting plain-language docs, **not** while touching code. No code was
+changed. This needs a real investigation, not a revert — a lot has landed since the
+commit that removed it.
+
+**What's true today.** `infra/link_handler/pipeline.py:64` issues a plain, unconditional
+`client.get(endpoint_url)`. It reads `etag` / `last-modified` off the response and stores
+them (`:86-87`), but never sends them back on the next cycle. Nothing in the repo sends
+`If-None-Match` or `If-Modified-Since`. Every registered endpoint is downloaded in full
+every ~10 minutes; the "only act when it changed" saving is real but happens *after*
+download, via in-memory `detect_diff` (`:89`) gating writes to Oxigraph and SPARQL.
+
+**Verified live on the VPS (2026-08-17), not just locally:**
+
+| Check | Result |
+|---|---|
+| Running container `maps-link-handler:/app/pipeline.py` | grep `If-None-Match\|If-Modified-Since\|304` → exit 1, zero matches |
+| Live `snapshot_store.db` `fetch_status` | `ok` 206 · `unreachable` 9 · **`not_modified` 0** |
+| Live `snapshot_store.db` stored ETags | **81 rows non-null** — collected, never used |
+| Canary endpoint, plain GET | `200`, 1294 bytes |
+| Canary endpoint + `If-None-Match` | `304`, 0 bytes — server side works, client never asks |
+
+**History — this is a regression, not a missing feature.** `git log -S"If-None-Match"`
+lands on `a0fd729` *"Story 3.10: Final Cut — unify pipeline, scrub legacy"* (2026-05-21),
+which deleted `headers["if-none-match"] = prior_snap["etag"]`, the `304 →
+fetch_status="not_modified"` branch, and its tests (including an ordered two-cycle test
+asserting `observed_at` advances on a 304 while the payload is preserved). The commit
+message notes *"the legacy transformer/heartbeat_log path is gone"* — conditional GET
+lived in that path and the unified pipeline reimplemented fetching without it. A working
+reference implementation and its tests are recoverable from git history.
+
+**Why this is an investigation, not a restore.** Epic 3.5 and everything after it
+reshaped the freshness contract, so the old 304 semantics can't be assumed to still fit:
+
+- The three-token model (`observed_at` / `updated_at` / `state.lastchange`) postdates the
+  removal. On a 304 there is no payload to diff — Axis A/B behaviour has to be re-derived
+  against the current contract, not copied from the pre-3.10 code.
+- `scripts/check_docs.py` DEAD_TOKENS still carries
+  `build_state_only_update → "deleted in Epic 3.5 (304 writes nothing to Oxigraph)"`,
+  which means Epic 3.5 made a *deliberate decision about 304 handling* — while the code
+  had already stopped producing 304s. Those two need reconciling before anything is wired.
+- `snapshot_store.py:110` `mark_not_modified()` is an orphan: documented *"Called on 304
+  responses"*, zero callers. Decide restore-vs-retire as part of the same pass.
+- Mother Sands already serves conditional GETs correctly, so the canary is a ready-made
+  test surface (`data/canary/mother-sands-endpoint.py:71`).
+
+**Why it matters beyond bandwidth.** The public/orientation docs want to answer the
+"you re-download everything every 10 minutes?" objection with *"we ask if it changed; a
+304 costs a few bytes."* That claim is **currently false** and must not ship until this is
+resolved — the audience most likely to read it is the audience most likely to check.
+Blocks one beat of the planned orientation / landing-page content.
+
+**Stale memory flag:** `heartbeat_303_staleness_fix.md` describes the pre-3.10 world
+(stale ETags blocking updates). It documents behaviour that no longer exists — correct or
+retire it when this is resolved.
+
 ## Deferred from: code review of 13-3-persona-voice-port-bernard-yaml-to-hermes (2026-08-15)
 
 - Manny reference-doc symlink conversion + mom-vocab.md DISTINCT/escaping fixes bundled into 13.3's diff, outside its stated File List scope — confirmed intentional by Nicolas ("manny = intentional fixes"), no further action.
