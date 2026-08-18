@@ -79,6 +79,8 @@ This isn't proprietary. It's infrastructure you can understand, audit, and fork.
 
 ## Documentation
 
+**New here? [What Maps of Making is](docs/what-is-maps-of-making.md)** — six short sections, no jargon.
+
 | | | |
 |---|---|---|
 | 🧭 **Tutorial** | Learn by doing | [Publish your first space](docs/tutorial/01-publish-your-first-space.md) |
