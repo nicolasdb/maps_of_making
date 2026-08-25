@@ -1,0 +1,87 @@
+site_name: Maps of Making
+site_description: >-
+  Maker spaces are invisible because maps go stale. Maps of Making reads
+  structured data spaces publish themselves, so the map stays current.
+site_url: https://nicolasdb.github.io/maps_of_making/
+repo_url: https://github.com/nicolasdb/maps_of_making
+repo_name: nicolasdb/maps_of_making
+edit_uri: edit/mom-demo/docs/
+
+docs_dir: docs
+site_dir: site
+
+# archive/ holds superseded planning drafts, explicitly not part of the
+# shipped doc tree (see docs/archive/draft/ARCHIVED.md) — keep it out of
+# the built site entirely.
+exclude_docs: |
+  archive/
+
+nav:
+  - Home: what-is-maps-of-making.md
+  - Tutorial:
+      - Publish your first space: tutorial/01-publish-your-first-space.md
+  - How-To Guides:
+      - How-To Guides: how-to/index.md
+      - Register your space: how-to/register-your-space.md
+      - Import a space batch: how-to/import-a-space-batch.md
+      - Diagnose a broken map: how-to/diagnose-a-broken-map.md
+      - Set up Mother Sands: how-to/set-up-mother-sands.md
+      - Operate the VPS: how-to/operate-the-vps.md
+  - Reference:
+      - Reference: reference/index.md
+      - Field traceability matrix: reference/field-traceability.md
+      - Freshness axes: reference/freshness-axes.md
+      - Semantic layer: reference/semantic-layer.md
+      - Supplier list schema: reference/supplier-list-schema.md
+      - VPS topology: reference/vps-topology.md
+  - Explanation:
+      - Explanation: explanation/index.md
+      - Field lifecycle: explanation/field-lifecycle.md
+      - Mother Sands concept: explanation/mother-sands-concept.md
+      - OHM integration: explanation/ohm-integration.md
+      - Architecture:
+          - Payload lifecycle: explanation/architecture/01-walking-skeleton.md
+          - Design rules: explanation/architecture/04-design-rules.md
+          - View shell: explanation/architecture/05-view-shell.md
+          - Space card: explanation/architecture/06-space-card.md
+          - Wizard shell: explanation/architecture/07-wizard-shell.md
+          - Seeding model: explanation/architecture/09-seeding-model.md
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+
+plugins:
+  - search

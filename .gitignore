@@ -4,6 +4,7 @@
 _bmad/
 node_modules/
 graphify-out/
+site/
 
 # OS / editor
 .directory

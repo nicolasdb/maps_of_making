@@ -27,7 +27,7 @@ RSYNC_EXCLUDE := \
 .PHONY: ca-reachable ca-timeout ca-dns-fail ca-http-error caxis-a
 .PHONY: cb-seeded cb-confirmed cb-aging cb-zombie cb-dead cb-closed caxis-b c-demo-on c-demo-off
 .PHONY: cc-open cc-shut caxis-c
-.PHONY: check-docs vps-stage-scripts _vps-push
+.PHONY: check-docs docs-install docs-serve docs-build vps-stage-scripts _vps-push
 .PHONY: vps-c-reset vps-c-activate vps-cb-confirmed vps-cb-aging vps-cb-zombie vps-cb-dead vps-cb-closed
 .PHONY: vps-cc-open vps-cc-shut vps-c-demo-on vps-c-demo-off
 
@@ -55,6 +55,20 @@ PUSH_STEP    ?= $(MAKE) endpoint
 # no venv needed. Run before committing doc changes / in CI. See scripts/check_docs.py.
 check-docs:
 	@python3 scripts/check_docs.py
+
+# ── Docs site (mkdocs + Material) ────────────────────────────────────────────
+# venv/ is shared with the rest of the project's Python tooling; docs deps
+# live in docs/requirements.txt so they stay separate from app deps.
+docs-install:
+	@test -d venv || python3 -m venv venv
+	venv/bin/pip install -q -r docs/requirements.txt
+	@echo "✓ docs deps installed — run 'make docs-serve' to preview"
+
+docs-serve: docs-install
+	venv/bin/mkdocs serve
+
+docs-build: docs-install
+	venv/bin/mkdocs build --strict
 
 ## ── Mac / Docker local dev ───────────────────────────────────────────────────
 ## These targets replace the Podman-based startdev/rebuild/reset workflow on macOS.
@@ -141,6 +155,8 @@ mac-reset:
 help:
 	@echo "── DOCS ─────────────────────────────────────────────────────────────"
 	@echo "make check-docs    — fail if a superseded architecture fact reappears in live docs"
+	@echo "make docs-serve    — live-reload preview of the mkdocs site at http://127.0.0.1:8000"
+	@echo "make docs-build    — build the static docs site into site/ (strict mode)"
 	@echo "── MAC / DOCKER (local dev on macOS, includes OHM) ──────────────────"
 	@echo "make mac-up        — start MoM + OHM stack (Docker, no Podman needed)"
 	@echo "make mac-init      — load ontologies + seed test data + heartbeat (run after mac-up)"

@@ -82,6 +82,6 @@ There is no chance we close every gap on our own.
 | If you want to… | Go to |
 |---|---|
 | Put your space on the map, step by step | [Tutorial: publish your first space](tutorial/01-publish-your-first-space.md) |
-| Do one specific thing | [How-to guides](how-to/) |
-| Look up how something actually behaves | [Reference](reference/) |
-| Understand why it's built this way | [Explanation](explanation/) |
+| Do one specific thing | [How-to guides](how-to/index.md) |
+| Look up how something actually behaves | [Reference](reference/index.md) |
+| Understand why it's built this way | [Explanation](explanation/index.md) |
