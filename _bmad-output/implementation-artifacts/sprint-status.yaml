@@ -238,9 +238,23 @@ development_status:
   9-12-wizard-visual-design-pass-color-layout-contrast: done  # operator-approved; locks the interaction+visual frame 9.6/9.10 inherit (see story Final decision record)
   epic-9-retrospective: done  # 2026-07-07: see epic-9-retro-2026-07-07.md
 
-  # Epic 10: Multi-Network Schema — Bundles, Concept Commons & Emergent Ontologies (stub — no stories yet)
+  # Epic 10: Multi-Network Schema — Bundles, Concept Commons & Emergent Ontologies
   # Renamed from Epic 9 (2026-05-29). Depends on Story 3.5 (core.ttl, crosswalk.csv, ADR-016).
-  epic-10: backlog
+  # OPENED 2026-08-25: no longer a story-less stub. The supplier demo ("wood suppliers near me", not just
+  #   makerspaces) needs a shared vocabulary at the centre and per-place content at the edge — which IS this
+  #   epic's concept-commons thesis, arriving as a concrete case instead of a design seed. The epic's
+  #   "post-demo, not on critical path" framing no longer holds; see the dated note in epics.md.
+  epic-10: in-progress
+  10-1-supplier-concept-commons-openfab-list: review  # built + live-verified; HALTED at the AC 4.4 human checkpoint — Nicolas reviews openfab.curation.csv (6 open decisions in the story Completion Notes)
+  # Follow-ups seeded by 10.1, not yet stories:
+  #   - Bernard captures supplier recommendations in Matrix rooms → proposal queue (read-only bot proposes,
+  #     never writes; same shape as log_gap). Needs the MCP write path below.
+  #   - Supplier self-hosted endpoint: the published schema (docs/reference/supplier-list-schema.md) is
+  #     deliberately what a supplier would host themselves later — the space hosts on their behalf meanwhile.
+  #   - Upstream PR to openfab-lab/rtfm once the schema stabilizes; MoM then fetches their URL
+  #     (coordinator-endpoint pattern) instead of vendoring data/supplier-lists/openfab.trig.
+  #   - core:relationships wormhole emission (ADR-016) — documented, emitted nowhere; would link a space to
+  #     its supplier graph instead of leaving the graph an island.
   epic-10-retrospective: optional
 
   # Epic 13: Agent Plane — Bernardo on Hermes (ADR-018; migration+parity; twin-until-parity)

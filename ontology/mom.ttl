@@ -74,15 +74,15 @@ mom:visibility
 mom:geolocationFidelity
   a owl:DatatypeProperty ;
   rdfs:label "Geolocation Fidelity" ;
-  rdfs:comment "Precision level of the space's geo coordinates: 'exact' (GPS), 'approximate' (address lookup), 'city' (city-level), or 'country' (country-level). From Story 0.1." ;
-  rdfs:domain mom:Space ;
+  rdfs:comment "Precision level of the geo coordinates of a space or supplier: 'exact' (GPS), 'approximate' (address lookup), 'city' (city-level), or 'country' (country-level). From Story 0.1; domain widened to suppliers in Story 10.1." ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( mom:Space mom:Supplier ) ] ;  # widened by Story 10.1 — suppliers carry the same precision honesty as spaces
   rdfs:range xsd:string .
 
 mom:geolocationNote
   a owl:DatatypeProperty ;
   rdfs:label "Geolocation Note" ;
   rdfs:comment "Human-readable explanation when geolocationFidelity is not exact (e.g. 'Address incomplete — showing city-level location'). Displayed as a UI hint, not an error." ;
-  rdfs:domain mom:Space ;
+  rdfs:domain [ a owl:Class ; owl:unionOf ( mom:Space mom:Supplier ) ] ;  # widened by Story 10.1 — suppliers carry the same precision honesty as spaces
   rdfs:range xsd:string .
 
 # Activity vocabulary

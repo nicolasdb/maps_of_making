@@ -1,0 +1,193 @@
+@prefix mom: <https://nicolasdb.github.io/mapsofmaking_ontology/ns#> .
+@prefix schema: <https://schema.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+# MOM Supplier Vocabulary — shared terms for material & service suppliers
+# Story 10.1 (Epic 10, concept commons). Loaded into <urn:mak:ontology/sup>.
+#
+# WHY THIS IS HORIZONTAL
+# ──────────────────────────────────────────────────────────────────────────────
+# Spaces publish supplier lists; the *categories* in them belong to no single space.
+# If OpenFab minted `ofs:category-bois` and a Charleroi fablab minted `ccl:categorie-bois`,
+# those are two distinct concepts to a machine: nothing cross-references, and "wood
+# suppliers near me" would only ever return the list of the space being asked. Keeping
+# the vocabulary central is not tidiness — it IS the cross-referencing feature.
+#
+# The split this file implements (the same one MoM already applies to spaces):
+#   vocabulary → here, on MoM, written once
+#   content    → with the space that curates it (data/supplier-lists/<space>.trig)
+#
+# LABEL CONVENTION (inherited from mom.ttl's activity scheme)
+#   skos:prefLabel  canonical English tag, lowercase-hyphenated, untagged
+#   skos:altLabel   language-tagged FR/EN/NL + untagged synonyms
+#   rdfs:label      human-readable display form
+#
+# DEFERRED: owl:sameAs Wikidata anchors, which mom.ttl carries for activity concepts.
+# Omitted deliberately rather than guessed — a wrong anchor is worse than none. Adding
+# them is a bounded follow-up once each IRI is verified against Wikidata.
+
+# Classes
+# ──────────────────────────────────────────────────────────────────────────────
+
+mom:Supplier
+  a owl:Class ;
+  rdfs:subClassOf schema:LocalBusiness ;
+  rdfs:label "Supplier" ;
+  rdfs:comment "A business supplying materials, tools, consumables or fabrication services to making spaces. Subclass of schema:LocalBusiness so the address/contact vocabulary comes from Schema.org rather than being re-minted. Suppliers are curated BY spaces (mom:recommendedBy); a supplier does not publish its own endpoint today, though docs/reference/supplier-list-schema.md is written so it could." .
+
+# Properties
+# ──────────────────────────────────────────────────────────────────────────────
+
+mom:supplierCategory
+  a owl:ObjectProperty ;
+  rdfs:label "Supplier Category" ;
+  rdfs:comment "Links a supplier to a concept in mom:SupplierCategoryScheme. A supplier may carry several." ;
+  rdfs:domain mom:Supplier ;
+  rdfs:range skos:Concept .
+
+mom:recommendedBy
+  a owl:ObjectProperty ;
+  rdfs:label "Recommended By" ;
+  rdfs:comment "The space that curates and vouches for this supplier entry. Direction is deliberate and reads 'this space recommends this supplier' — NOT 'this supplier serves this space'. A supplier makes no commitment by appearing here; the space does. The same supplier recommended by several spaces carries several of these, which is exactly the cross-referencing signal the shared vocabulary exists to enable." ;
+  rdfs:domain mom:Supplier ;
+  rdfs:range mom:Space .
+
+mom:supplierListSource
+  a owl:DatatypeProperty ;
+  rdfs:label "Supplier List Source" ;
+  rdfs:comment "The upstream URL of the list this entry was ingested from — the supplier-list analogue of mom:sourceUrl. Per-entry rather than per-graph on purpose: entries from a curated repo list and entries captured elsewhere (e.g. a recommendation in a chat room) must stay distinguishable after they land in the same graph." ;
+  rdfs:domain mom:Supplier ;
+  rdfs:range xsd:anyURI .
+
+mom:verifiedSource
+  a owl:DatatypeProperty ;
+  rdfs:label "Verified Source" ;
+  rdfs:comment "Where a curator confirmed this entry's facts (existence, address, URL). Absent means unverified — carried forward honestly rather than dropped. Supplier lists grow by append over years and go stale silently; this is the field that makes staleness visible instead of assumed." ;
+  rdfs:domain mom:Supplier ;
+  rdfs:range xsd:anyURI .
+
+mom:operatedBy
+  a owl:ObjectProperty ;
+  rdfs:label "Operated By" ;
+  rdfs:comment "Links a supplier entry to another mom:Supplier that is the same current legal operator — used when acquisitions or rebrands have consolidated formerly-independent businesses under one owner, but the entries stay separate because each is a distinct physical, geolocatable branch with its own member commentary. Do NOT merge such entries: deleting a branch loses a real address and an independent recommendation. Example (Story 10.1): OpenFab members separately recommended 'Nordic' and 'Exobois' before both were acquired by Bois Watteau; each keeps its own supplier record with mom:operatedBy pointing at Watteau's." ;
+  rdfs:domain mom:Supplier ;
+  rdfs:range mom:Supplier .
+
+# Supplier category vocabulary
+# ──────────────────────────────────────────────────────────────────────────────
+# Trilingual FR/EN/NL from the outset: these lists are curated in the space's own
+# language (OpenFab's is French), but a Dutch- or English-speaking maker must find the
+# same suppliers. Language-tagged altLabels are what make that one query instead of three.
+
+mom:SupplierCategoryScheme
+  a skos:ConceptScheme ;
+  skos:prefLabel "Maps of Making Supplier Category Vocabulary" ;
+  rdfs:comment "Controlled vocabulary of supplier categories. Add concepts here; add altLabels freely. Do not remove prefLabels without a migration. A space needing a category that does not exist should raise a mom:OntologyGap rather than mint a local one." .
+
+mom:supplier-wood
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "wood" ;
+  rdfs:label "Wood" ;
+  skos:altLabel "wood"@en, "bois"@fr, "hout"@nl, "plywood", "multiplex", "contreplaqué", "panneaux", "timber" ;
+  rdfs:comment "Wood, panels, plywood, multiplex." .
+
+mom:supplier-specialty-wood
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:broader mom:supplier-wood ;
+  skos:prefLabel "specialty-wood" ;
+  rdfs:label "Specialty Wood" ;
+  skos:altLabel "specialty wood"@en, "bois spéciaux"@fr, "speciaal hout"@nl, "veneer", "placage", "fineer" ;
+  rdfs:comment "Veneer, hardwoods and specialty timber, as distinct from general panel stock." .
+
+mom:supplier-plastic
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "plastic" ;
+  rdfs:label "Plastic" ;
+  skos:altLabel "plastic"@en, "plastique"@fr, "plastiek"@nl, "plexiglas", "acrylic", "PMMA", "polypropylene", "polypropylène" ;
+  rdfs:comment "Plastics, plexiglass/acrylic sheet, polypropylene." .
+
+mom:supplier-metal
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "metal" ;
+  rdfs:label "Metal" ;
+  skos:altLabel "metal"@en, "métal"@fr, "metaal"@nl, "aluminium", "sheet metal", "tôle", "plaatmetaal", "steel", "acier" ;
+  rdfs:comment "Metal stock, aluminium, sheet metal." .
+
+mom:supplier-cnc-bits
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "cnc-bits" ;
+  rdfs:label "CNC Bits" ;
+  skos:altLabel "CNC bits"@en, "mèches CNC"@fr, "CNC boren"@nl, "end mill", "fraise", "router bit", "tooling" ;
+  rdfs:comment "CNC cutting bits, end mills and machine tooling." .
+
+mom:supplier-fasteners
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "fasteners" ;
+  rdfs:label "Fasteners" ;
+  skos:altLabel "fasteners"@en, "visserie"@fr, "bevestigingsmateriaal"@nl, "screws", "vis", "bolts", "boulons", "nuts", "écrous" ;
+  rdfs:comment "Screws, bolts, nuts and fixings." .
+
+mom:supplier-electronics
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "electronics" ;
+  rdfs:label "Electronics" ;
+  skos:altLabel "electronics"@en, "électronique"@fr, "elektronica"@nl, "components", "composants", "Arduino", "Raspberry Pi", "microcontroller" ;
+  rdfs:comment "Electronic components, development boards, measurement gear." .
+
+mom:supplier-textile
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "textile" ;
+  rdfs:label "Textile" ;
+  skos:altLabel "textile"@en, "textile"@fr, "textiel"@nl, "fabric", "tissu", "stoffen", "sewing", "couture" ;
+  rdfs:comment "Fabric and textiles." .
+
+mom:supplier-leather
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "leather" ;
+  rdfs:label "Leather" ;
+  skos:altLabel "leather"@en, "cuir"@fr, "leder"@nl, "hide", "peau" ;
+  rdfs:comment "Leather and hides." .
+
+mom:supplier-paper
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "paper" ;
+  rdfs:label "Paper" ;
+  skos:altLabel "paper"@en, "papier"@fr, "papier"@nl, "cardboard", "carton", "origami", "karton" ;
+  rdfs:comment "Paper, card and board stock." .
+
+mom:supplier-services
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "services" ;
+  rdfs:label "Services" ;
+  skos:altLabel "services"@en, "services"@fr, "diensten"@nl, "prestataire", "subcontractor", "sous-traitance", "job shop" ;
+  rdfs:comment "Fabrication service providers: painting, CNC machining, 3D printing on demand. Distinct from material suppliers — a service provider sells capacity, not stock." .
+
+mom:supplier-drinks
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "drinks" ;
+  rdfs:label "Drinks" ;
+  skos:altLabel "drinks"@en, "boissons"@fr, "dranken"@nl, "club mate", "beer", "bière", "bier" ;
+  rdfs:comment "Drinks for the space itself. Not a making material — kept because spaces genuinely source it collectively, and dropping it would silently discard real curated entries." .
+
+mom:supplier-maintenance-consumables
+  a skos:Concept ;
+  skos:inScheme mom:SupplierCategoryScheme ;
+  skos:prefLabel "maintenance-consumables" ;
+  rdfs:label "Maintenance Consumables" ;
+  skos:altLabel "maintenance consumables"@en, "consommable d'entretien"@fr, "onderhoudsverbruiksgoederen"@nl, "filters", "filtres", "ventilation", "VMC" ;
+  rdfs:comment "Consumables keeping the space's own machines running: ventilation and laser fume filters, spares. Note: OpenFab's list documents filter part numbers under this heading rather than businesses, so the concept currently has no members — the category is real, that source section just is not a supplier list." .

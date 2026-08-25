@@ -1,0 +1,273 @@
+{
+  "081/ 250 330, Namur., Belgium": {
+    "display_name": "N.004.081, N4, Emptinne, Hamois, Dinant, Namur, Wallonie, 5363, België / Belgique / Belgien",
+    "lat": 50.319212,
+    "lon": 5.1272489
+  },
+  "1050 XL (pas loin) +32 471 28 38 83, Belgium": null,
+  "1547 Bever-Biévène, Belgium": {
+    "display_name": "1547, Bever, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, België / Belgique / Belgien",
+    "lat": 50.7106676,
+    "lon": 3.9321606
+  },
+  "161 bld Général Jacques, 1050, XL (pas loin) +32 471 28 38 83, Belgium": null,
+  "1700 Dilbeek, Belgium": {
+    "display_name": "1700, Dilbeek, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, België / Belgique / Belgien",
+    "lat": 50.8589068,
+    "lon": 4.2393858
+  },
+  "1930 Nossegem (zaventem), Belgium": {
+    "display_name": "Nossegem, Zaventem, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, België / Belgique / Belgien",
+    "lat": 50.8806901,
+    "lon": 4.5029559
+  },
+  "23 rue du 503ème Régiment du Train, 33127, Martignas-sur-Jalle, Belgium": null,
+  "23 rue du 503ème Régiment du Train, 33127, Martignas-sur-Jalle, France": null,
+  "33127 Martignas-sur-Jalle, Belgium": null,
+  "33127 Martignas-sur-Jalle, France": {
+    "display_name": "Martignas-sur-Jalle, Bordeaux, Gironde, Nouvelle-Aquitaine, France métropolitaine, 33127, France",
+    "lat": 44.8405364,
+    "lon": -0.7761489
+  },
+  "37 rue Dieudonné Lefèvre, 1020, Laeken, Belgium": {
+    "display_name": "Rue Dieudonné Lefèvre - Dieudonné Lefèvrestraat, Tour et Taxis - Thurn en Taxis, Bruxelles - Brussel, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1020, België / Belgique / Belgien",
+    "lat": 50.870151,
+    "lon": 4.3446898
+  },
+  "5020 Suarlée, Belgium": {
+    "display_name": "Suarlée, Namur, Wallonie, België / Belgique / Belgien",
+    "lat": 50.4806569,
+    "lon": 4.7802419
+  },
+  "99 Chaussée de, Waterloo, Belgium": {
+    "display_name": "99, Chaussée de Tervuren, Six-Maisons, Fond Vandenbosch, Waterloo, Nivelles, Brabant wallon, Wallonie, 1410, België / Belgique / Belgien",
+    "lat": 50.7071315,
+    "lon": 4.404251
+  },
+  "Avenue Albert 1er 255, 5000, Namur, Belgium": {
+    "display_name": "Carlier Bois, 255, Avenue Albert 1er, Namur, Wallonie, 5000, België / Belgique / Belgien",
+    "lat": 50.4680284,
+    "lon": 4.8917579
+  },
+  "Avenue Rogier 118, 1030, Schaerbeek, Belgium": {
+    "display_name": "118, Avenue Rogier - Rogierlaan, Dailly, Schaerbeek - Schaarbeek, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1030, België / Belgique / Belgien",
+    "lat": 50.8595273,
+    "lon": 4.3779559
+  },
+  "Avenue Zaman 11, 1190, Forest, Belgium": {
+    "display_name": "Avenue Zaman - Zamanlaan, Forest - Vorst, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1190, België / Belgique / Belgien",
+    "lat": 50.8105268,
+    "lon": 4.3238903
+  },
+  "Avenue de Vilvorde 100, 1000, Bruxelles, Belgium": {
+    "display_name": "100, Avenue de Vilvorde - Vilvoordselaan, Bruxelles - Brussel, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1000, België / Belgique / Belgien",
+    "lat": 50.8801821,
+    "lon": 4.3785488
+  },
+  "Avenue de la Reine 131, 1030, Schaerbeek, Belgium": {
+    "display_name": "131, Avenue de la Reine - Koninginnelaan, Quartier Brabant - Brabantwijk, Schaerbeek - Schaarbeek, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1030, België / Belgique / Belgien",
+    "lat": 50.8685693,
+    "lon": 4.3632513
+  },
+  "Avenue des Saisons 100, 1050, Ixelles, Belgium": {
+    "display_name": "100, Avenue des Saisons - Jaargetijdenlaan, Petite Suisse - Klein-Zwitserland, Ixelles - Elsene, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1050, België / Belgique / Belgien",
+    "lat": 50.8179707,
+    "lon": 4.3883619
+  },
+  "Bergensesteenweg 341, 1600, Sint-Pieters-Leeuw, Belgium": {
+    "display_name": "341, Bergensesteenweg, Sint-Pieters-Leeuw, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, 1600, België / Belgique / Belgien",
+    "lat": 50.7891671,
+    "lon": 4.282177
+  },
+  "Boulevard Industriel 97b, 7700, Mouscron, Belgium": {
+    "display_name": "Boulevard Industriel, Tombreû, Luingne - Lowingen, Mouscron, Tournai-Mouscron, Hainaut, Wallonie, 7700, België / Belgique / Belgien",
+    "lat": 50.7510526,
+    "lon": 3.2614906
+  },
+  "Boulevard de l'Humanité 51, 1190, Forest, Belgium": {
+    "display_name": "51, Boulevard de l'Humanité - Humaniteitslaan, Forest - Vorst, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1190, België / Belgique / Belgien",
+    "lat": 50.8206329,
+    "lon": 4.3142661
+  },
+  "Chaussée de Charleroi 149, 1060, Saint-Gilles, Belgium": {
+    "display_name": "149, Chaussée de Charleroi - Charleroise Steenweg, Ma Campagne, Saint-Gilles - Sint-Gillis, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1060, België / Belgique / Belgien",
+    "lat": 50.8278343,
+    "lon": 4.3545281
+  },
+  "Chaussée de Gand 503, 1080, Molenbeek-Saint-Jean, Belgium": {
+    "display_name": "503, Chaussée de Gand - Steenweg op Gent, Cité Nogent - Tuinwijk Nogent, Molenbeek-Saint-Jean - Sint-Jans-Molenbeek, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1080, België / Belgique / Belgien",
+    "lat": 50.8587045,
+    "lon": 4.3139445
+  },
+  "Chaussée de Louvain 923, 1140, Evere, Belgium": {
+    "display_name": "923, Chaussée de Louvain - Leuvensesteenweg, Paduwa, Evere, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1140, België / Belgique / Belgien",
+    "lat": 50.8604213,
+    "lon": 4.4193847
+  },
+  "Chaussée de Vilvorde 13, 1020, Laeken, Belgium": {
+    "display_name": "Chaussée de Vilvorde - Vilvoordsesteenweg, Laeken - Laken, Bruxelles - Brussel, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1020, België / Belgique / Belgien",
+    "lat": 50.8835153,
+    "lon": 4.3764579
+  },
+  "Chaussée de Waterloo 99, 1060, Saint-Gilles, Belgium": {
+    "display_name": "99, Chaussée de Waterloo - Waterlose Steenweg, Saint-Gilles - Sint-Gillis, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1060, België / Belgique / Belgien",
+    "lat": 50.8290844,
+    "lon": 4.3440966
+  },
+  "Chaussée de Wavre 610, 1040, Etterbeek, Belgium": {
+    "display_name": "610, Chaussée de Wavre - Steenweg op Waver, La Chasse - De Jacht, Etterbeek, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1040, België / Belgique / Belgien",
+    "lat": 50.8323319,
+    "lon": 4.3875188
+  },
+  "Chemin de la Fontenelle 17, 7090, Braine-le-Comte, Belgium": {
+    "display_name": "17, Chemin de la Fontenelle, Braine-le-Comte, Soignies, Hainaut, Wallonie, 7090, België / Belgique / Belgien",
+    "lat": 50.5895506,
+    "lon": 4.1570049
+  },
+  "Chemin de la Scierie 18, 1457, Tourinnes-Saint-Lambert, Belgium": {
+    "display_name": "Chemin de la Scierie, Lerinnes, Tourinnes-Saint-Lambert, Walhain, Nivelles, Brabant wallon, Wallonie, 1457, België / Belgique / Belgien",
+    "lat": 50.6370617,
+    "lon": 4.719931
+  },
+  "Clos de la Giberne 3, 1410, Waterloo, Belgium": {
+    "display_name": "MicroContrôleur Hobby, 3, Clos de la Giberne, Château Cheval, Mont-Saint-Jean, Waterloo, Nivelles, Brabant wallon, Wallonie, 1410, België / Belgique / Belgien",
+    "lat": 50.6906082,
+    "lon": 4.4008371
+  },
+  "Eugène Ghijsstraat 73, 1600, Sint-Pieters-Leeuw, Belgium": {
+    "display_name": "73, Eugène Ghijsstraat, Sint-Pieters-Leeuw, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, 1600, België / Belgique / Belgien",
+    "lat": 50.800768,
+    "lon": 4.2933838
+  },
+  "Guido Gezellestraat 122, 1654, Huizingen, Belgium": {
+    "display_name": "122, Guido Gezellestraat, Sollenberg, Huizingen, Beersel, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, 1654, België / Belgique / Belgien",
+    "lat": 50.7540511,
+    "lon": 4.2713289
+  },
+  "Industriepark B-7, 2220, Heist-op-den-Berg, Belgium": {
+    "display_name": "Industriepark, Zone B, Zonderschot, Heist-op-den-Berg, Mechelen, Antwerpen, Vlaanderen, 2220, België / Belgique / Belgien",
+    "lat": 51.0613852,
+    "lon": 4.7302168
+  },
+  "Itterbeeksebaan 42, 1700, Dilbeek, Belgium": {
+    "display_name": "42, Itterbeeksebaan, Dilbeek, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, 1700, België / Belgique / Belgien",
+    "lat": 50.8355697,
+    "lon": 4.2626438
+  },
+  "Leuvensesteenweg 472, 1930, Zaventem, Belgium": {
+    "display_name": "472, Leuvensesteenweg, Zaventem, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, 1930, België / Belgique / Belgien",
+    "lat": 50.8715401,
+    "lon": 4.4738882
+  },
+  "Leuvensesteenweg 658, 1930, Nossegem, Belgium": {
+    "display_name": "Leuvensesteenweg, Nossegem, Zaventem, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, 1930, België / Belgique / Belgien",
+    "lat": 50.8766819,
+    "lon": 4.5004563
+  },
+  "Martignas-sur-Jalle, Belgium": null,
+  "Paul Gilsonlaan 358, 1620, Drogenbos, Belgium": {
+    "display_name": "358, Paul Gilsonlaan - Avenue Paul Gilson, Drogenbos, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, 1620, België / Belgique / Belgien",
+    "lat": 50.7975431,
+    "lon": 4.3101408
+  },
+  "Petrus Basteleusstraat 2-4-6, 1600, Sint-Pieters-Leeuw, Belgium": {
+    "display_name": "Petrus Basteleusstraat, Sint-Pieters-Leeuw, Halle-Vilvoorde, Vlaams-Brabant, Vlaanderen, 1600, België / Belgique / Belgien",
+    "lat": 50.7869303,
+    "lon": 4.2744012
+  },
+  "Quai de Biestebroeck 23, 1070, Anderlecht, Belgium": {
+    "display_name": "BBP Port Sud, 23, Quai de Biestebroeck - Biestebroekkaai, Anderlecht, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1070, België / Belgique / Belgien",
+    "lat": 50.8350253,
+    "lon": 4.3172491
+  },
+  "Route de Waimes 90, 4960, Malmedy, Belgium": {
+    "display_name": "Biemar, 90, Route de Waimes, Bévercé, Malmedy, Verviers, Liège, Wallonie, 4960, België / Belgique / Belgien",
+    "lat": 50.4046208,
+    "lon": 6.0696447
+  },
+  "Rue Antoine Dansaert 188, 1000, Bruxelles, Belgium": {
+    "display_name": "188, Rue Antoine Dansaert - Antoine Dansaertstraat, Quartier de la Senne - Zennewijk, Pentagone - Vijfhoek, Bruxelles - Brussel, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1000, België / Belgique / Belgien",
+    "lat": 50.8527571,
+    "lon": 4.3419089
+  },
+  "Rue Georges Moreau 57, 1070, Anderlecht, Belgium": {
+    "display_name": "57, Rue Georges Moreau - Georges Moreaustraat, Cureghem - Kuregem, Anderlecht, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1070, België / Belgique / Belgien",
+    "lat": 50.8367069,
+    "lon": 4.3267438
+  },
+  "Rue Meyerbeer 145, 1180, Uccle, Belgium": {
+    "display_name": "145, Rue Meyerbeer - Meyerbeerstraat, Le Chat - De Kat, Uccle - Ukkel, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1180, België / Belgique / Belgien",
+    "lat": 50.8146644,
+    "lon": 4.3404853
+  },
+  "Rue Verheyden 18-28, 1070, Anderlecht, Belgium": {
+    "display_name": "Rue Verheyden - Verheydenstraat, Scheut, Anderlecht, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1070, België / Belgique / Belgien",
+    "lat": 50.8454958,
+    "lon": 4.3159145
+  },
+  "Rue de Birmingham 32, 1080, Molenbeek-Saint-Jean, Belgium": {
+    "display_name": "32, Rue de Birmingham - Birminghamstraat, Molenbeek-Saint-Jean - Sint-Jans-Molenbeek, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1080, België / Belgique / Belgien",
+    "lat": 50.8481366,
+    "lon": 4.327726
+  },
+  "Rue de l'Étang 63, 1040, Bruxelles, Belgium": {
+    "display_name": "63, Rue de l'Étang - Vijverstraat, Etterbeek, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1040, België / Belgique / Belgien",
+    "lat": 50.8352834,
+    "lon": 4.381036
+  },
+  "Rue de l'Étang 75, 1040, Bruxelles, Belgium": {
+    "display_name": "75, Rue de l'Étang - Vijverstraat, Etterbeek, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1040, België / Belgique / Belgien",
+    "lat": 50.8351462,
+    "lon": 4.3814608
+  },
+  "Rue de la Caserne 84, 1000, Bruxelles, Belgium": {
+    "display_name": "84, Rue de la Caserne - Kazernestraat, Quartier Midi-Lemonnier - Zuid-Lemonnierwijk, Pentagone - Vijfhoek, Bruxelles - Brussel, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1000, België / Belgique / Belgien",
+    "lat": 50.8415134,
+    "lon": 4.3415344
+  },
+  "Rue de la Clé 57, 4630, Soumagne, Belgium": {
+    "display_name": "4630, Soumagne, Liège, Wallonie, België / Belgique / Belgien",
+    "lat": 50.6172547,
+    "lon": 5.734725
+  },
+  "Rue des Ateliers 7-9, 1080, Molenbeek-Saint-Jean, Belgium": {
+    "display_name": "Rue des Ateliers - Werkhuizenstraat, Rive Gauche - Linkeroever, Molenbeek-Saint-Jean - Sint-Jans-Molenbeek, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1080, België / Belgique / Belgien",
+    "lat": 50.8579518,
+    "lon": 4.3438995
+  },
+  "Rue des Gaulois 7A, 7822, Meslin-l'Évêque, Belgium": {
+    "display_name": "Rue des Gaulois, Parc d'activité économique Orientis 1, Meslin-l'Évêque, Ath, Hainaut, Wallonie, 7822, België / Belgique / Belgien",
+    "lat": 50.6546553,
+    "lon": 3.8526409
+  },
+  "Rue du Chien Vert 2, 1080, Molenbeek-Saint-Jean, Belgium": {
+    "display_name": "2, Rue du Chien Vert - Groene Hondstraat, Rive Gauche - Linkeroever, Molenbeek-Saint-Jean - Sint-Jans-Molenbeek, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1080, België / Belgique / Belgien",
+    "lat": 50.8552026,
+    "lon": 4.342462
+  },
+  "Rue du Fond du Maréchal 29, 5020, Suarlée, Belgium": null,
+  "Rue du Pannenhuys 215, 1090, Jette, Belgium": {
+    "display_name": "Rue du Pannenhuys - Pannenhuisstraat / Rue Pannenhuis - Pannenhuisstraat, Esseghem - Essegem, Laeken - Laken, Jette, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1090, België / Belgique / Belgien",
+    "lat": 50.8754953,
+    "lon": 4.3387918
+  },
+  "Rue du Printemps 39-43, 1050, Ixelles, Belgium": {
+    "display_name": "Rue du Printemps - Lentestraat, Petite Suisse - Klein-Zwitserland, Ixelles - Elsene, Brussel-Hoofdstad - Bruxelles-Capitale, Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest, 1050, België / Belgique / Belgien",
+    "lat": 50.820507,
+    "lon": 4.3886248
+  },
+  "Soumagne ou à Malmedy, Belgium": null,
+  "Terbekehofdreef 55-59, 2610, Wilrijk, Belgium": {
+    "display_name": "Dejond Metals nv, 55-59, Terbekehofdreef, Terbekehof, Wilrijk, Antwerpen, Vlaanderen, 2610, België / Belgique / Belgien",
+    "lat": 51.1580617,
+    "lon": 4.3689554
+  },
+  "Walhain, E411, sortie n° 10, Belgium": null,
+  "Wijngaardveld 9, 9300, Aalst, Belgium": {
+    "display_name": "Syntra Aalst, 9, Wijngaardveld, Aalst, Oost-Vlaanderen, Vlaanderen, 9300, België / Belgique / Belgien",
+    "lat": 50.9603251,
+    "lon": 4.0466202
+  },
+  "XL (pas loin) +32 471 28 38 83, Belgium": null,
+  "à, Soumagne ou à Malmedy, Belgium": null
+}

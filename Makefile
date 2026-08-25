@@ -18,9 +18,10 @@ RSYNC_EXCLUDE := \
 	--exclude='__pycache__/' \
 	--exclude='*.pyc' \
 	--exclude='.pytest_cache/' \
+	--exclude='graphify-out/' \
 	--exclude='data/'
 
-.PHONY: sync sync-app sync-gateway publish startdev rebuild seed-spaceapi seed-bundle bundle-to-csv csv-to-bundle heartbeat devdeploy reset vps-rebuild vps-seed vps-reset help endpoint deploy-genjson bernard-copy load-ontology vps-load-ontology
+.PHONY: sync sync-app sync-gateway publish startdev rebuild seed-spaceapi seed-bundle bundle-to-csv csv-to-bundle heartbeat devdeploy reset vps-rebuild vps-seed vps-reset help endpoint deploy-genjson bernard-copy load-ontology vps-load-ontology vps-load-suppliers
 .PHONY: mac-up mac-down mac-init mac-reset mac-heartbeat mac-test
 .PHONY: c-reset c-activate c-demo c-all
 .PHONY: ca-reachable ca-timeout ca-dns-fail ca-http-error caxis-a
@@ -235,19 +236,81 @@ seed-bundle:
 	$(LOCAL_CEXEC) python3 -c "import httpx; r = httpx.post('http://localhost:8000/api/rematerialize', timeout=60); print('rematerialize:', r.status_code)"
 	@echo "✓ local bundle seeded (network=$(NETWORK))"
 
-## Load mom.ttl + iop.ttl into Oxigraph named graphs (urn:mak:ontology/{mom,iop}).
+## Load mom.ttl + iop.ttl + sup.ttl + crosswalks + data/supplier-lists/*.ttl into
+## Oxigraph named graphs (urn:mak:ontology/{mom,iop,sup}, urn:mak:suppliers/<space>).
 ## Idempotent (PUT replaces the graph). Dormant scaffold for the Epic 6 NL→SPARQL bot —
 ## the live heartbeat/materialize path does NOT query these graphs yet. Folded into
 ## devdeploy so a fresh stack always carries the vocabulary. See
-## docs/reference/semantic-layer.md.
+## docs/reference/semantic-layer.md and docs/reference/supplier-list-schema.md.
 load-ontology:
 	bash scripts/load_ontology.sh http://localhost:7878
 
 ## Parity twin: load ontologies into the VPS Oxigraph. Runs the same script on the
 ## VPS host against the published :7878 port. sync-app must have pushed scripts/ +
 ## ontology/ first. NOT auto-run by `publish` (idempotent, but kept opt-in).
+##
+## NOTE 1 — NEVER use localhost:7878 on the VPS. Story 13.2 removed maps-oxigraph's
+## published port (it is `expose` only now), but an unrelated project on the same host
+## (pocpod0) publishes ITS Oxigraph on 0.0.0.0:7878. So host localhost:7878 answers 200
+## while being the wrong triplestore — this target silently loaded MoM's vocabulary into
+## another project's store until 2026-08-25. Resolve maps-oxigraph's container IP instead.
+##
+## NOTE 2 — this loads the VOCABULARY only. Supplier lists live under data/, which
+## RSYNC_EXCLUDE deliberately drops (data/ is runtime state on the VPS), so sync-app
+## never carries them and this target prints "No supplier lists — skipping". Use
+## vps-load-suppliers below, which stages them first — same reason vps-seed and
+## vps-seed-bundle scp their inputs instead of relying on the sync.
+## Resolve maps-oxigraph's container IP and run the loader against it. Fails loudly
+## if the IP cannot be resolved — an empty URL must never silently become localhost.
+define VPS_LOAD_ONTOLOGY
+IP=$$(ssh $(REMOTE) "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' maps-oxigraph" 2>/dev/null); \
+test -n "$$IP" || { echo "❌ could not resolve maps-oxigraph container IP — refusing to fall back to localhost:7878 (that is another project's store)"; exit 1; }; \
+echo "→ maps-oxigraph at $$IP"; \
+ssh $(REMOTE) "cd $(REMOTE_APP) && bash scripts/load_ontology.sh http://$$IP:7878"
+endef
+
 vps-load-ontology:
-	ssh $(REMOTE) 'cd $(REMOTE_APP) && bash scripts/load_ontology.sh http://localhost:7878'
+	@$(VPS_LOAD_ONTOLOGY)
+
+## Parity twin for supplier lists: stage the generated Turtle onto the VPS (rsync
+## excludes data/), then run the same loader. Idempotent — PUT replaces each graph.
+vps-load-suppliers:
+	@echo "→ staging supplier lists onto the VPS (rsync excludes data/)..."
+	ssh $(REMOTE) 'mkdir -p $(REMOTE_APP)/data/supplier-lists'
+	scp -q data/supplier-lists/*.ttl $(REMOTE):$(REMOTE_APP)/data/supplier-lists/
+	@$(VPS_LOAD_ONTOLOGY)
+
+## ── Supplier lists (Story 10.1) ────────────────────────────────────────────────
+## The markdown → CSV → (curation) → Turtle pipeline. Deliberately NOT one target:
+## a human reads the CSV between extraction and emission. Supplier lists are decades
+## of free-form appends; one-shot parsing bakes the rot in. Same reason seed_csv.py
+## exists for spaces. Loading is handled by load-ontology above.
+##
+## SPACE = the space slug curating the list (default: openfab)
+SPACE ?= openfab
+SUPPLIER_SOURCE ?= https://raw.githubusercontent.com/openfab-lab/rtfm/refs/heads/master/faq/fournisseurs.md
+
+## Step 1 — extract the markdown list into a curation CSV. OVERWRITES the CSV,
+## including any curation already done: regenerate only when the upstream source changed.
+suppliers-csv:
+	source venv/bin/activate && python scripts/parse_suppliers.py to-csv \
+	  --markdown data/supplier-lists/$(SPACE).source.md \
+	  --out data/supplier-lists/$(SPACE).curation.csv \
+	  --space $(SPACE)
+
+## Step 2 — geocode the curated CSV in place. Uses the committed cache first; add
+## OFFLINE=1 to forbid network calls entirely (reproducibility check).
+suppliers-geocode:
+	source venv/bin/activate && python scripts/geocode_suppliers.py \
+	  --csv data/supplier-lists/$(SPACE).curation.csv $(if $(OFFLINE),--offline,)
+
+## Step 3 — emit Turtle from the curated + geocoded CSV. Safe to re-run.
+suppliers-ttl:
+	source venv/bin/activate && python scripts/parse_suppliers.py to-ttl \
+	  --csv data/supplier-lists/$(SPACE).curation.csv \
+	  --out data/supplier-lists/$(SPACE).ttl \
+	  --space $(SPACE) \
+	  --source-url "$(SUPPLIER_SOURCE)"
 
 ## Full local pipeline: rebuild + load ontology + heartbeat (no bulk seed — Story 3.4b clean slate)
 ## Pre-seeded spaces load via coordinator URL onboarding or fresh canary injection.

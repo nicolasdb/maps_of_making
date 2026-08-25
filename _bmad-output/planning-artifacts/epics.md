@@ -2314,7 +2314,7 @@ So that the tool feels trustworthy and effortless, matching the polish of the Mo
 
 ---
 
-## Epic 10: Multi-Network Schema — Bundles, Concept Commons & Emergent Ontologies *(stub — no stories yet; post-demo)*
+## Epic 10: Multi-Network Schema — Bundles, Concept Commons & Emergent Ontologies *(opened 2026-08-25 — Story 10.1 in progress)*
 
 > **Added 2026-05-18** from the schema role-play design dialogue around Story 3.5. **Stub only.** Design seeds: `schema-roleplay-personas.md`, `mom-schema-architecture-handoff.md`, ADR-016 (written in Story 3.5).
 
@@ -2331,7 +2331,21 @@ Story 3.5 ships `core.ttl` + `crosswalk.csv` — the static foundation of the th
 
 > **Update 2026-07-06 (agent-plane counterpart):** this epic is the **data-plane** white-label track (bundles, cartridges, ontology layers). Its **agent-plane counterpart is Epic 13** (Bernardo on Hermes — cloneable bot archetype = profile + env + persona). The archetype and the bundle are the same white-label unit seen from two planes (ADR-018). The **Solid-pod / WebID** direction noted above is a *future, additive* storage + write-auth backend for pod-sovereign nodes — **NOT** the mechanism Epic 13 uses to land agent-plane writes (re-scoped 2026-07-07: Epic 13 writes ride the existing Matrix-power-level + git-deploy-key path; see Epic 13 Story 13.4-write). Pod-backed write-auth is not a prerequisite for retiring harness Bernard.
 
-**Depends on:** Story 3.5 (`core.ttl`, `crosswalk.csv`, ADR-016). Parallel to Epics 5–8. Not demo-blocking.
+> **Update 2026-08-25 (epic opened — the "post-demo" framing no longer holds):** this epic was scoped as a
+> stub, post-demo and off the critical path. A concrete demo need pulled it forward: MoM can only find
+> makerspaces, and the next demo step is **"wood suppliers within 5 km"** — makers need materials, not just
+> spaces. OpenFab has a curated Brussels supplier list (`openfab-lab/rtfm`, `faq/fournisseurs.md`, ~55 entries,
+> free-form French). Ingesting it forces exactly this epic's central question, and answers it the same way MoM
+> already splits spaces: **vocabulary is horizontal and lives in `ontology/` on MoM; content is per-place and
+> lives with the place.** If each space minted its own "wood" concept, nothing would cross-reference and
+> "suppliers near me" would only ever return the list of the space being asked — so the concept commons is not
+> an aesthetic preference here, it is the feature. Suppliers are therefore the epic's first real case rather
+> than a design seed. **Story 10.1** ships the shared `mom:` supplier vocabulary + OpenFab's list, geolocated
+> and trilingual (FR/EN/NL). Deliberately still out of scope and unchanged by this: `fab.ttl` extraction,
+> bundle-loading via `config.yaml`, wormhole traversal UX, managed-ontology monetization. The original scope
+> sketch above stands; only its sequencing changed.
+
+**Depends on:** Story 3.5 (`core.ttl`, `crosswalk.csv`, ADR-016). Parallel to Epics 5–8. **Story 10.1 is demo-driven** (the rest of the epic remains post-demo).
 
 > **Update 2026-06-19:** the OKW/IoP-Alliance partnership (see Epic 11) makes this epic's "crosswalk cartridge" vision concrete — OKW is the first real cartridge, OSLO (Flemish education) a likely second. The parenthetical above ("OKH/IoP Alliance — Internet of Production, distinct from the repo's `iop:` Internet of Places") is **resolved**: IoP = Internet of Production Alliance, the repo will map *toward* OKW rather than mint homegrown equipment terms.
 
