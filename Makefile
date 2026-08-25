@@ -21,7 +21,7 @@ RSYNC_EXCLUDE := \
 	--exclude='graphify-out/' \
 	--exclude='data/'
 
-.PHONY: sync sync-app sync-gateway publish startdev rebuild seed-spaceapi seed-bundle bundle-to-csv csv-to-bundle heartbeat devdeploy reset vps-rebuild vps-seed vps-reset help endpoint deploy-genjson bernard-copy load-ontology vps-load-ontology vps-load-suppliers
+.PHONY: sync sync-app sync-gateway publish startdev rebuild seed-spaceapi seed-bundle bundle-to-csv csv-to-bundle heartbeat devdeploy reset vps-rebuild vps-seed vps-reset help endpoint deploy-genjson bernard-copy load-ontology vps-load-ontology vps-load-suppliers suppliers-csv suppliers-geocode suppliers-ttl
 .PHONY: mac-up mac-down mac-init mac-reset mac-heartbeat mac-test
 .PHONY: c-reset c-activate c-demo c-all
 .PHONY: ca-reachable ca-timeout ca-dns-fail ca-http-error caxis-a
@@ -293,6 +293,10 @@ SUPPLIER_SOURCE ?= https://raw.githubusercontent.com/openfab-lab/rtfm/refs/heads
 ## Step 1 — extract the markdown list into a curation CSV. OVERWRITES the CSV,
 ## including any curation already done: regenerate only when the upstream source changed.
 suppliers-csv:
+	@test ! -f data/supplier-lists/$(SPACE).curation.csv || \
+	  { echo "❌ data/supplier-lists/$(SPACE).curation.csv already exists — this target OVERWRITES"; \
+	    echo "   curated data. Move it aside first, or pass FORCE=1 to proceed anyway."; \
+	    test -n "$(FORCE)"; } || exit 1
 	source venv/bin/activate && python scripts/parse_suppliers.py to-csv \
 	  --markdown data/supplier-lists/$(SPACE).source.md \
 	  --out data/supplier-lists/$(SPACE).curation.csv \

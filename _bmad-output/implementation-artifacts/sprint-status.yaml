@@ -245,7 +245,7 @@ development_status:
   #   epic's concept-commons thesis, arriving as a concrete case instead of a design seed. The epic's
   #   "post-demo, not on critical path" framing no longer holds; see the dated note in epics.md.
   epic-10: in-progress
-  10-1-supplier-concept-commons-openfab-list: review  # built + live-verified; HALTED at the AC 4.4 human checkpoint — Nicolas reviews openfab.curation.csv (6 open decisions in the story Completion Notes)
+  10-1-supplier-concept-commons-openfab-list: done  # code review done, 6 patches applied incl. schema:geo fix; redeployed 2026-08-25, verified live: 62 suppliers, 0 with flat schema:latitude, 46 correctly on schema:geo bnode
   # Follow-ups seeded by 10.1, not yet stories:
   #   - Bernard captures supplier recommendations in Matrix rooms → proposal queue (read-only bot proposes,
   #     never writes; same shape as log_gap). Needs the MCP write path below.

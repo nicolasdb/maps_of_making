@@ -126,6 +126,10 @@ CATEGORY_MAP = {
     "boissons": "drinks",
 }
 
+# The 13 category local names known to ontology/sup.ttl — validated against, not just mapped to,
+# since a curated CSV can carry a hand-typed category that no longer matches any concept.
+KNOWN_CATEGORIES = set(CATEGORY_MAP.values())
+
 KNOWN_LOCALITIES = [
     "bruxelles", "brussel", "waterloo", "drogenbos", "laeken", "evere",
     "neder-over-heembeek", "jette", "anderlecht", "forest", "molenbeek",
@@ -149,8 +153,13 @@ def category_for_header(header: str) -> str | None:
     key = header.strip().lower().rstrip(":").strip()
     if key in CATEGORY_MAP:
         return CATEGORY_MAP[key]
+    # Fuzzy fallback on whole words only ("bois spéciaux" ~ "bois"), never bare substring —
+    # a bare-substring match ("cuir" inside an unrelated longer word) would silently
+    # cross-map an unrelated header.
+    key_words = set(key.split())
     for cat_key, local in CATEGORY_MAP.items():
-        if cat_key in key or key in cat_key:
+        cat_words = set(cat_key.split())
+        if cat_words <= key_words or key_words <= cat_words:
             return local
     return None
 
@@ -196,10 +205,14 @@ def looks_like_address(line: str) -> bool:
 def split_address(addr: str) -> tuple[str, str, str]:
     """Best-effort split into (street, postcode, city). Blanks are fine — curation fills them."""
     addr = addr.strip().rstrip("\\").strip()
-    m = re.search(r"\b(\d{4})\b\s*,?\s*(.*)$", addr)
-    if m:
+    # Take the LAST 4-digit run, not the first: a leading house number ("12 rue X, 1000
+    # Bruxelles") would otherwise be mistaken for the postcode, since Belgian postcodes
+    # sit right before the city name near the end of the address.
+    matches = list(re.finditer(r"\b(\d{4})\b", addr))
+    if matches:
+        m = matches[-1]
         postcode = m.group(1)
-        city = m.group(2).strip(" ,-")
+        city = addr[m.end():].strip(" ,-")
         street = addr[:m.start()].strip(" ,-")
         return street, postcode, city
     for k in KNOWN_LOCALITIES:
@@ -437,6 +450,8 @@ def to_ttl(args) -> int:
     with csv_path.open(encoding="utf-8", newline="") as f:
         rows = list(csv.DictReader(f))
 
+    known_slugs = {(r.get("slug") or "").strip() for r in rows if (r.get("slug") or "").strip()}
+
     body: list[str] = []
     emitted = 0
     for r in rows:
@@ -451,6 +466,10 @@ def to_ttl(args) -> int:
              f'    schema:name "{escape_ttl(name)}" ;']
 
         cat = (r.get("category") or "").strip()
+        if cat and cat not in KNOWN_CATEGORIES:
+            warn["unknown_category"] += 1
+            log.warning(f"WARNING {slug}: category {cat!r} is not one of ontology/sup.ttl's "
+                        f"known categories — emitted anyway, but the IRI will not resolve")
         if cat:
             t.append(f"    mom:supplierCategory mom:supplier-{cat} ;")
         else:
@@ -484,8 +503,14 @@ def to_ttl(args) -> int:
                 log.warning(f"WARNING {slug}: coordinates without fidelity — not emitted "
                             f"(honesty about precision is required)")
             else:
-                t.append(f'    schema:latitude "{lat}"^^xsd:decimal ;')
-                t.append(f'    schema:longitude "{lon}"^^xsd:decimal ;')
+                # schema:geo → blank node, matching how spaces emit coordinates
+                # (scripts/seed_csv.py, scripts/seed_bundle.py) — flattening lat/lon onto
+                # the entity directly, as an earlier version of this script did, was an
+                # inconsistent second schema for the same concept.
+                t.append('    schema:geo [ a schema:GeoCoordinates ;')
+                t.append(f'        schema:latitude "{lat}"^^xsd:decimal ;')
+                t.append(f'        schema:longitude "{lon}"^^xsd:decimal ;')
+                t.append('    ] ;')
                 t.append(f'    mom:geolocationFidelity "{fidelity}" ;')
                 geo_note = (r.get("geo_note") or "").strip()
                 if geo_note:
@@ -501,6 +526,10 @@ def to_ttl(args) -> int:
             t.append(f'    mom:deathReason "{escape_ttl(death_reason)}" ;')
         operated_by = (r.get("operated_by") or "").strip()
         if operated_by:
+            if operated_by not in known_slugs:
+                warn["operated_by_dangling"] += 1
+                log.warning(f"WARNING {slug}: operated_by={operated_by!r} matches no row's "
+                            f"slug in this CSV — emitted anyway, dangling reference")
             t.append(f"    mom:operatedBy <urn:mak:supplier/{operated_by}> ;")
         verified_at = (r.get("verified_at") or "").strip()
         if verified_at:

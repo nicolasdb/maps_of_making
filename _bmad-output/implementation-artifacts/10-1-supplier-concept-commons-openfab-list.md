@@ -1,6 +1,6 @@
 # Story 10.1: Supplier Concept Commons + First OpenFab List
 
-Status: review
+Status: done
 
 ## Story
 
@@ -50,7 +50,8 @@ This story opens Epic 10. Suppliers are the first *real* case of the epic's "con
    5. `mom:geolocationFidelity` / `mom:geolocationNote` are **reused, not redefined** — their
       `rdfs:domain` widens from `mom:Space` to `owl:unionOf (mom:Space mom:Supplier)`.
 3. **Parser — `scripts/parse_suppliers.py`,** two subcommands on the `seed_csv.py` model:
-   `to-csv` (markdown → raw CSV) and `to-trig` (curated + geocoded CSV → TriG).
+   `to-csv` (markdown → raw CSV) and `to-ttl` (curated + geocoded CSV → Turtle — renamed from
+   the originally planned `to-trig`; see Completion Notes' TriG→Turtle correction, same reason).
    Markdown never becomes triples directly; it always passes through the reviewed CSV.
    Graph is `<urn:mak:suppliers/openfab>`, subjects `urn:mak:supplier/<slug>`, aligning with the
    store's existing `urn:mak:` convention.
@@ -101,6 +102,17 @@ This story opens Epic 10. Suppliers are the first *real* case of the epic's "con
 
 ## Tasks / Subtasks
 
+### Review Findings
+
+- [x] [Review][Patch] AC 4.4 checkpoint framing was stale — CSV was reviewed out-of-band before geocoding/deploy; sprint-status "HALTED at AC 4.4" wording corrected to reflect the checkpoint was passed.
+- [x] [Review][Patch] Parser subcommand renamed `to-trig` → `to-ttl` in AC 3/Task 7 to match shipped code, with a note on why (Oxigraph rejects TriG on PUT ?graph=).
+- [ ] [Review][Patch] New Makefile targets suppliers-csv/suppliers-geocode/suppliers-ttl missing from .PHONY [Makefile:107-131]
+- [ ] [Review][Patch] geocode_suppliers.py caches failed lookups permanently with no expiry/retry [scripts/geocode_suppliers.py:2911-2913]
+- [ ] [Review][Patch] to_ttl emits mom:supplier-{cat} and mom:operatedBy without validating category/slug exist [scripts/parse_suppliers.py:3517,3566]
+- [ ] [Review][Patch] split_address() misparses house/box number preceding postcode as the postcode [scripts/parse_suppliers.py:3261]
+- [ ] [Review][Patch] category_for_header() bidirectional substring match can cross-map unrelated headers [scripts/parse_suppliers.py:3210-3217]
+- [ ] [Review][Patch] make suppliers-csv overwrites curated CSV with no confirmation guard [Makefile:111-117]
+
 - [ ] Task 1: Open Epic 10 (AC: —)
   - [ ] `sprint-status.yaml`: `epic-10: backlog` → `in-progress`, add this story
   - [ ] `epics.md`: dated note explaining why the supplier demo pulled Epic 10 onto the critical path
@@ -124,7 +136,7 @@ This story opens Epic 10. Suppliers are the first *real* case of the epic's "con
 - [ ] Task 6: Geocoding (AC: 5)
   - [ ] `scripts/geocode_suppliers.py` + committed cache; fidelity cascade; Belgium bbox validation
 - [ ] Task 7: Emit + load (AC: 3, 6)
-  - [ ] `to-trig` subcommand → `data/supplier-lists/openfab.trig`
+  - [ ] `to-ttl` subcommand → `data/supplier-lists/openfab.ttl`
   - [ ] Extend `scripts/load_ontology.sh`; verify the `vps-` twin
 - [ ] Task 8: Schema doc (AC: 7)
   - [ ] `docs/reference/supplier-list-schema.md`

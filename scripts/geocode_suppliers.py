@@ -98,6 +98,9 @@ def main() -> int:
     ap.add_argument("--csv", required=True)
     ap.add_argument("--offline", action="store_true",
                     help="Use only the committed cache; never call Nominatim")
+    ap.add_argument("--retry-failed", action="store_true",
+                    help="Ignore cached no-match (null) entries and re-query them — "
+                         "a negative result may just have been a transient outage")
     args = ap.parse_args()
 
     csv_path = Path(args.csv)
@@ -131,7 +134,7 @@ def main() -> int:
         resolved = False
 
         for query, fidelity in candidates(row):
-            if query in cache:
+            if query in cache and not (args.retry_failed and cache[query] is None):
                 hit = cache[query]
             elif args.offline:
                 stats["cache_miss_offline"] += 1
